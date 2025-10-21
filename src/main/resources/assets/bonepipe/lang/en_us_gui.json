@@ -1,0 +1,19 @@
+{
+  "gui.bonepipe.adapter": "Wireless Adapter",
+  "gui.bonepipe.tab.items": "Items",
+  "gui.bonepipe.tab.fluids": "Fluids",
+  "gui.bonepipe.tab.energy": "Energy",
+  "gui.bonepipe.tab.network": "Network",
+  "gui.bonepipe.items.title": "Item Transfer Settings",
+  "gui.bonepipe.fluids.title": "Fluid Transfer Settings",
+  "gui.bonepipe.energy.title": "Energy Transfer Settings",
+  "gui.bonepipe.network.title": "Network Configuration",
+  "gui.bonepipe.frequency": "Frequency",
+  "gui.bonepipe.access_mode": "Access Mode",
+  "gui.bonepipe.owner": "Owner",
+  "gui.bonepipe.public": "Public",
+  "gui.bonepipe.private": "Private",
+  "gui.bonepipe.connected": "Connected to machine",
+  "gui.bonepipe.not_connected": "No machine detected",
+  "gui.bonepipe.network_nodes": "Network nodes"
+}

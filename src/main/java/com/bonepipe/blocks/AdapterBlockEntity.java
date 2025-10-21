@@ -1,6 +1,7 @@
 package com.bonepipe.blocks;
 
 import com.bonepipe.BonePipe;
+import com.bonepipe.gui.AdapterMenu;
 import com.bonepipe.network.FrequencyKey;
 import com.bonepipe.network.NetworkManager;
 import com.bonepipe.network.NetworkNode;
@@ -187,8 +188,7 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-        // TODO: Return AdapterMenu
-        return null;
+        return new AdapterMenu(id, inventory, this);
     }
 
     // Getters/Setters

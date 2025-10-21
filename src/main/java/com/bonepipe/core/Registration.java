@@ -3,11 +3,14 @@ package com.bonepipe.core;
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlock;
 import com.bonepipe.blocks.AdapterBlockEntity;
+import com.bonepipe.gui.AdapterMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -28,7 +31,8 @@ public class Registration {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = 
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, BonePipe.MOD_ID);
     
-    // TODO: Add MENUS register for containers
+    public static final DeferredRegister<MenuType<?>> MENUS = 
+        DeferredRegister.create(ForgeRegistries.MENU_TYPES, BonePipe.MOD_ID);
     
     // ========== BLOCKS ==========
     
@@ -48,6 +52,12 @@ public class Registration {
             () -> BlockEntityType.Builder.of(AdapterBlockEntity::new, ADAPTER_BLOCK.get())
                 .build(null));
     
+    // ========== MENUS ==========
+    
+    public static final RegistryObject<MenuType<AdapterMenu>> ADAPTER_MENU = 
+        MENUS.register("adapter",
+            () -> IForgeMenuType.create(AdapterMenu::new));
+    
     /**
      * Initialize all registrations
      */
@@ -55,6 +65,7 @@ public class Registration {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
+        MENUS.register(modEventBus);
         
         BonePipe.LOGGER.info("Registered all deferred registers");
     }
