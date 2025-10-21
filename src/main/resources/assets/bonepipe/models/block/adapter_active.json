@@ -4,7 +4,7 @@
     "top": "bonepipe:block/adapter_top",
     "bottom": "bonepipe:block/adapter_bottom",
     "side": "bonepipe:block/adapter_side",
-    "front": "bonepipe:block/adapter_front",
+    "front": "bonepipe:block/adapter_front_active",
     "particle": "bonepipe:block/adapter_side"
   },
   "elements": [

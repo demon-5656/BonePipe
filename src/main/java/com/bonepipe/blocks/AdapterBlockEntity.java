@@ -15,8 +15,12 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -40,6 +44,11 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private BlockEntity connectedMachine = null;
     private Direction machineDirection = null;
     private int connectionCheckCooldown = 0;
+    
+    // Capability caching for performance
+    private LazyOptional<?> cachedItemHandler = LazyOptional.empty();
+    private LazyOptional<?> cachedFluidHandler = LazyOptional.empty();
+    private LazyOptional<?> cachedEnergyHandler = LazyOptional.empty();
     
     // Network registration
     private boolean registeredInNetwork = false;
@@ -88,6 +97,25 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
                 unregisterFromNetwork();
             }
         }
+        
+        // Update block state for visual feedback
+        updateBlockState();
+    }
+    
+    /**
+     * Update block state based on current status
+     */
+    private void updateBlockState() {
+        if (level != null && !level.isClientSide()) {
+            BlockState currentState = level.getBlockState(worldPosition);
+            boolean shouldBeActive = isActive();
+            
+            if (currentState.getValue(AdapterBlock.ACTIVE) != shouldBeActive) {
+                level.setBlock(worldPosition, 
+                    currentState.setValue(AdapterBlock.ACTIVE, shouldBeActive), 
+                    Block.UPDATE_CLIENTS);
+            }
+        }
     }
     
     /**
@@ -101,8 +129,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         connectedMachine = MachineDetector.findConnectedMachine(level, worldPosition);
         machineDirection = MachineDetector.findMachineDirection(level, worldPosition);
         
-        // Log connection changes
+        // If machine changed, invalidate capability cache
         if (connectedMachine != oldMachine) {
+            invalidateCapabilityCache();
+            
             if (connectedMachine != null) {
                 BonePipe.LOGGER.debug("Adapter at {} connected to machine at {} (side: {})", 
                     worldPosition, connectedMachine.getBlockPos(), machineDirection);
@@ -112,6 +142,52 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             }
             setChanged();
         }
+    }
+    
+    /**
+     * Invalidate cached capabilities
+     */
+    private void invalidateCapabilityCache() {
+        cachedItemHandler.invalidate();
+        cachedFluidHandler.invalidate();
+        cachedEnergyHandler.invalidate();
+        
+        cachedItemHandler = LazyOptional.empty();
+        cachedFluidHandler = LazyOptional.empty();
+        cachedEnergyHandler = LazyOptional.empty();
+    }
+    
+    /**
+     * Get cached item handler capability
+     */
+    public LazyOptional<?> getCachedItemHandler() {
+        if (!cachedItemHandler.isPresent() && connectedMachine != null) {
+            cachedItemHandler = connectedMachine.getCapability(
+                ForgeCapabilities.ITEM_HANDLER, machineDirection);
+        }
+        return cachedItemHandler;
+    }
+    
+    /**
+     * Get cached fluid handler capability
+     */
+    public LazyOptional<?> getCachedFluidHandler() {
+        if (!cachedFluidHandler.isPresent() && connectedMachine != null) {
+            cachedFluidHandler = connectedMachine.getCapability(
+                ForgeCapabilities.FLUID_HANDLER, machineDirection);
+        }
+        return cachedFluidHandler;
+    }
+    
+    /**
+     * Get cached energy handler capability
+     */
+    public LazyOptional<?> getCachedEnergyHandler() {
+        if (!cachedEnergyHandler.isPresent() && connectedMachine != null) {
+            cachedEnergyHandler = connectedMachine.getCapability(
+                ForgeCapabilities.ENERGY, machineDirection);
+        }
+        return cachedEnergyHandler;
     }
     
     /**
@@ -155,6 +231,7 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
      */
     public void onRemoved() {
         unregisterFromNetwork();
+        invalidateCapabilityCache();
         BonePipe.LOGGER.info("Adapter at {} removed from world", worldPosition);
     }
 
