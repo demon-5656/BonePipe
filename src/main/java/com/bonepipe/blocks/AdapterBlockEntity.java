@@ -2,6 +2,7 @@ package com.bonepipe.blocks;
 
 import com.bonepipe.BonePipe;
 import com.bonepipe.gui.AdapterMenu;
+import com.bonepipe.items.UpgradeCardItem;
 import com.bonepipe.network.FrequencyKey;
 import com.bonepipe.network.NetworkManager;
 import com.bonepipe.network.NetworkNode;
@@ -9,18 +10,23 @@ import com.bonepipe.network.WirelessNetwork;
 import com.bonepipe.util.MachineDetector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -57,6 +63,26 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private int lastTransferTick = 0;
     private long totalTransferred = 0;
     
+    // Upgrade card inventory (4 slots)
+    private final ItemStackHandler upgradeInventory = new ItemStackHandler(4) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+            recalculateUpgrades();
+        }
+        
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return UpgradeCardItem.isUpgradeCard(stack);
+        }
+    };
+    
+    // Calculated upgrade bonuses
+    private double speedMultiplier = 1.0;
+    private double rangeMultiplier = 1.0;
+    private int stackBonus = 0;
+    private boolean hasFilter = false;
+    
     // Tick counter
     private int tickCounter = 0;
 
@@ -67,6 +93,33 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         for (Direction dir : Direction.values()) {
             sideConfigs.put(dir, new SideConfig());
         }
+    }
+    
+    /**
+     * Recalculate upgrade bonuses from installed cards
+     */
+    private void recalculateUpgrades() {
+        speedMultiplier = 1.0;
+        rangeMultiplier = 1.0;
+        stackBonus = 0;
+        hasFilter = false;
+        
+        for (int i = 0; i < upgradeInventory.getSlots(); i++) {
+            ItemStack stack = upgradeInventory.getStackInSlot(i);
+            UpgradeCardItem.UpgradeType type = UpgradeCardItem.getUpgradeType(stack);
+            
+            if (type != null) {
+                speedMultiplier *= type.speedMultiplier;
+                rangeMultiplier += type.rangeMultiplier;
+                stackBonus += type.stackBonus;
+                if (type == UpgradeCardItem.UpgradeType.FILTER) {
+                    hasFilter = true;
+                }
+            }
+        }
+        
+        BonePipe.LOGGER.debug("Adapter at {} upgrades: speed={}x, range={}x, stack=+{}, filter={}", 
+            worldPosition, speedMultiplier, rangeMultiplier, stackBonus, hasFilter);
     }
 
     /**
@@ -244,6 +297,8 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             tag.putUUID("owner", owner);
         }
         tag.putString("accessMode", accessMode.name());
+        tag.put("upgradeInventory", upgradeInventory.serializeNBT());
+        tag.putLong("totalTransferred", totalTransferred);
         // TODO: Save side configs
     }
 
@@ -256,6 +311,13 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         }
         if (tag.contains("accessMode")) {
             accessMode = AccessMode.valueOf(tag.getString("accessMode"));
+        }
+        if (tag.contains("upgradeInventory")) {
+            upgradeInventory.deserializeNBT(tag.getCompound("upgradeInventory"));
+            recalculateUpgrades();
+        }
+        if (tag.contains("totalTransferred")) {
+            totalTransferred = tag.getLong("totalTransferred");
         }
         // TODO: Load side configs
     }
@@ -343,6 +405,41 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
      */
     public Direction getMachineDirection() {
         return machineDirection;
+    }
+    
+    /**
+     * Get upgrade inventory handler
+     */
+    public IItemHandler getUpgradeInventory() {
+        return upgradeInventory;
+    }
+    
+    /**
+     * Get speed multiplier from upgrades
+     */
+    public double getSpeedMultiplier() {
+        return speedMultiplier;
+    }
+    
+    /**
+     * Get range multiplier from upgrades
+     */
+    public double getRangeMultiplier() {
+        return rangeMultiplier;
+    }
+    
+    /**
+     * Get stack size bonus from upgrades
+     */
+    public int getStackBonus() {
+        return stackBonus;
+    }
+    
+    /**
+     * Check if filter upgrade is installed
+     */
+    public boolean hasFilterUpgrade() {
+        return hasFilter;
     }
 
     // Inner classes
