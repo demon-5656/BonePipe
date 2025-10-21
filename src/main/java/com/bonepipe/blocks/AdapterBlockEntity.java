@@ -1,6 +1,11 @@
 package com.bonepipe.blocks;
 
 import com.bonepipe.BonePipe;
+import com.bonepipe.network.FrequencyKey;
+import com.bonepipe.network.NetworkManager;
+import com.bonepipe.network.NetworkNode;
+import com.bonepipe.network.WirelessNetwork;
+import com.bonepipe.util.MachineDetector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -31,8 +36,12 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private Map<Direction, SideConfig> sideConfigs = new HashMap<>();
     
     // Connection state
-    private boolean connectedToMachine = false;
+    private BlockEntity connectedMachine = null;
     private Direction machineDirection = null;
+    private int connectionCheckCooldown = 0;
+    
+    // Network registration
+    private boolean registeredInNetwork = false;
     
     // Tick counter
     private int tickCounter = 0;
@@ -56,43 +65,91 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
 
         tickCounter++;
 
-        // Every 20 ticks (once per second)
-        if (tickCounter % 20 == 0) {
+        // Check machine connection every 20 ticks (once per second)
+        if (connectionCheckCooldown <= 0) {
             checkMachineConnection();
+            connectionCheckCooldown = 20;
+        } else {
+            connectionCheckCooldown--;
         }
 
-        // Network operations
-        if (connectedToMachine && !frequency.isEmpty()) {
-            performNetworkOperations();
+        // Register in network if we have frequency and owner
+        if (connectedMachine != null && !frequency.isEmpty() && owner != null) {
+            if (!registeredInNetwork) {
+                registerInNetwork();
+            }
+        } else {
+            if (registeredInNetwork) {
+                unregisterFromNetwork();
+            }
         }
     }
-
+    
     /**
-     * Check if we're still connected to a machine
+     * Check if we're connected to a machine
      */
     private void checkMachineConnection() {
-        // TODO: Implement capability checking for adjacent machines
-        // For now, just log
-        if (tickCounter % 100 == 0) {
-            BonePipe.LOGGER.debug("Adapter at {} checking connection", worldPosition);
+        BlockEntity oldMachine = connectedMachine;
+        Direction oldDirection = machineDirection;
+        
+        // Find connected machine
+        connectedMachine = MachineDetector.findConnectedMachine(level, worldPosition);
+        machineDirection = MachineDetector.findMachineDirection(level, worldPosition);
+        
+        // Log connection changes
+        if (connectedMachine != oldMachine) {
+            if (connectedMachine != null) {
+                BonePipe.LOGGER.debug("Adapter at {} connected to machine at {} (side: {})", 
+                    worldPosition, connectedMachine.getBlockPos(), machineDirection);
+            } else if (oldMachine != null) {
+                BonePipe.LOGGER.debug("Adapter at {} disconnected from machine", worldPosition);
+                unregisterFromNetwork();
+            }
+            setChanged();
         }
     }
-
+    
     /**
-     * Perform network transfer operations
+     * Register this adapter in the wireless network
      */
-    private void performNetworkOperations() {
-        // TODO: Implement network logic
-        // 1. Register with NetworkManager
-        // 2. Process transfer requests
-        // 3. Execute actual transfers
+    private void registerInNetwork() {
+        if (level == null || owner == null || frequency.isEmpty()) {
+            return;
+        }
+        
+        FrequencyKey key = new FrequencyKey(owner, frequency);
+        WirelessNetwork network = NetworkManager.getInstance().getOrCreateNetwork(key);
+        NetworkNode node = new NetworkNode(level, worldPosition, key);
+        network.addNode(node);
+        
+        registeredInNetwork = true;
+        BonePipe.LOGGER.debug("Adapter at {} registered in network {}", worldPosition, key);
+    }
+    
+    /**
+     * Unregister from network
+     */
+    private void unregisterFromNetwork() {
+        if (!registeredInNetwork || owner == null || frequency.isEmpty()) {
+            return;
+        }
+        
+        FrequencyKey key = new FrequencyKey(owner, frequency);
+        WirelessNetwork network = NetworkManager.getInstance().getNetwork(key);
+        if (network != null) {
+            NetworkNode node = new NetworkNode(level, worldPosition, key);
+            network.removeNode(node);
+            BonePipe.LOGGER.debug("Adapter at {} unregistered from network {}", worldPosition, key);
+        }
+        
+        registeredInNetwork = false;
     }
 
     /**
      * Called when block is removed
      */
     public void onRemoved() {
-        // TODO: Unregister from network
+        unregisterFromNetwork();
         BonePipe.LOGGER.info("Adapter at {} removed from world", worldPosition);
     }
 
@@ -140,8 +197,12 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void setFrequency(String frequency) {
-        this.frequency = frequency;
-        setChanged();
+        if (!this.frequency.equals(frequency)) {
+            unregisterFromNetwork();
+            this.frequency = frequency;
+            registeredInNetwork = false;
+            setChanged();
+        }
     }
 
     public UUID getOwner() {
@@ -149,8 +210,12 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void setOwner(UUID owner) {
-        this.owner = owner;
-        setChanged();
+        if (!java.util.Objects.equals(this.owner, owner)) {
+            unregisterFromNetwork();
+            this.owner = owner;
+            registeredInNetwork = false;
+            setChanged();
+        }
     }
 
     public AccessMode getAccessMode() {

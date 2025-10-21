@@ -3,6 +3,7 @@ package com.bonepipe.transfer;
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.network.NetworkNode;
+import com.bonepipe.util.MachineDetector;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -175,30 +176,18 @@ public class ItemTransferHandler implements ITransferHandler {
     }
     
     /**
-     * Get the machine BlockEntity connected to this adapter
+     * Get connected machine's BlockEntity
      */
-    private BlockEntity getMachineConnection(AdapterBlockEntity adapter) {
-        // TODO: Implement proper machine detection
-        // For now, check all adjacent blocks
-        for (Direction dir : Direction.values()) {
-            BlockEntity be = adapter.getLevel().getBlockEntity(adapter.getBlockPos().relative(dir));
-            if (be != null && be != adapter) {
-                return be;
-            }
-        }
-        return null;
+    private BlockEntity getMachineConnection(NetworkNode node) {
+        return MachineDetector.findConnectedMachine(node.getLevel(), node.getPos());
     }
-    
+
     /**
-     * Get the direction to the connected machine
+     * Get side to access machine
      */
-    private Direction getSideToMachine(AdapterBlockEntity adapter) {
-        // TODO: Implement proper side detection
-        // For now, return UP as default
-        return Direction.UP;
-    }
-    
-    /**
+    private Direction getSideToMachine(NetworkNode node) {
+        return MachineDetector.findMachineDirection(node.getLevel(), node.getPos());
+    }    /**
      * Get item handler capability from a BlockEntity
      */
     private IItemHandler getItemHandler(BlockEntity be, Direction side) {
