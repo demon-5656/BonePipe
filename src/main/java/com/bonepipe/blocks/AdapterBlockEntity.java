@@ -44,6 +44,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     // Network registration
     private boolean registeredInNetwork = false;
     
+    // Activity tracking
+    private int lastTransferTick = 0;
+    private long totalTransferred = 0;
+    
     // Tick counter
     private int tickCounter = 0;
 
@@ -225,6 +229,43 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     public void setAccessMode(AccessMode mode) {
         this.accessMode = mode;
         setChanged();
+    }
+    
+    /**
+     * Check if adapter is currently connected to a machine
+     */
+    public boolean isConnected() {
+        return connectedMachine != null;
+    }
+    
+    /**
+     * Check if adapter is currently active (transferring resources)
+     */
+    public boolean isActive() {
+        return tickCounter - lastTransferTick < 20; // Active within last second
+    }
+    
+    /**
+     * Mark that a transfer occurred
+     */
+    public void recordTransfer(long amount) {
+        lastTransferTick = tickCounter;
+        totalTransferred += amount;
+        setChanged();
+    }
+    
+    /**
+     * Get total amount transferred through this adapter
+     */
+    public long getTotalTransferred() {
+        return totalTransferred;
+    }
+    
+    /**
+     * Get connected machine direction
+     */
+    public Direction getMachineDirection() {
+        return machineDirection;
     }
 
     // Inner classes
