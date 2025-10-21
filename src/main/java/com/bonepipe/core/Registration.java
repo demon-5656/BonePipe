@@ -4,6 +4,7 @@ import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlock;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.gui.AdapterMenu;
+import com.bonepipe.items.UpgradeCardItem;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -44,6 +45,19 @@ public class Registration {
     public static final RegistryObject<Item> ADAPTER_ITEM = ITEMS.register("adapter",
         () -> new BlockItem(ADAPTER_BLOCK.get(), 
             new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
+    
+    // Upgrade cards
+    public static final RegistryObject<Item> SPEED_UPGRADE = ITEMS.register("speed_upgrade",
+        () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.SPEED));
+    
+    public static final RegistryObject<Item> FILTER_UPGRADE = ITEMS.register("filter_upgrade",
+        () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.FILTER));
+    
+    public static final RegistryObject<Item> RANGE_UPGRADE = ITEMS.register("range_upgrade",
+        () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.RANGE));
+    
+    public static final RegistryObject<Item> STACK_UPGRADE = ITEMS.register("stack_upgrade",
+        () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.STACK));
     
     // ========== BLOCK ENTITIES ==========
     

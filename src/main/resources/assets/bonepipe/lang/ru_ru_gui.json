@@ -15,5 +15,13 @@
   "gui.bonepipe.private": "Приватный",
   "gui.bonepipe.connected": "Подключено к машине",
   "gui.bonepipe.not_connected": "Машина не обнаружена",
-  "gui.bonepipe.network_nodes": "Узлы сети"
+  "gui.bonepipe.network_nodes": "Узлы сети",
+  "gui.bonepipe.status.connected": "Подключено",
+  "gui.bonepipe.status.disconnected": "Отключено",
+  "gui.bonepipe.status.active": "Активно",
+  "gui.bonepipe.status.error": "Ошибка",
+  "gui.bonepipe.button.enable": "Включить",
+  "gui.bonepipe.button.disable": "Отключить",
+  "gui.bonepipe.button.save": "Сохранить",
+  "gui.bonepipe.transfer_rate": "Скорость передачи"
 }

@@ -15,5 +15,13 @@
   "gui.bonepipe.private": "Private",
   "gui.bonepipe.connected": "Connected to machine",
   "gui.bonepipe.not_connected": "No machine detected",
-  "gui.bonepipe.network_nodes": "Network nodes"
+  "gui.bonepipe.network_nodes": "Network nodes",
+  "gui.bonepipe.status.connected": "Connected",
+  "gui.bonepipe.status.disconnected": "Disconnected",
+  "gui.bonepipe.status.active": "Active",
+  "gui.bonepipe.status.error": "Error",
+  "gui.bonepipe.button.enable": "Enable",
+  "gui.bonepipe.button.disable": "Disable",
+  "gui.bonepipe.button.save": "Save",
+  "gui.bonepipe.transfer_rate": "Transfer Rate"
 }

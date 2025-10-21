@@ -1,6 +1,12 @@
 {
   "block.bonepipe.adapter": "Беспроводной адаптер",
   
+  "item.bonepipe.adapter": "Беспроводной адаптер",
+  "item.bonepipe.speed_upgrade": "Улучшение скорости",
+  "item.bonepipe.filter_upgrade": "Улучшение фильтрации",
+  "item.bonepipe.range_upgrade": "Улучшение дальности",
+  "item.bonepipe.stack_upgrade": "Улучшение размера стека",
+  
   "container.bonepipe.adapter": "Беспроводной адаптер",
   
   "itemGroup.bonepipe": "BonePipe",
@@ -32,5 +38,10 @@
   "tooltip.bonepipe.adapter": "Беспроводной перенос ресурсов§7Разместите рядом с машиной",
   "tooltip.bonepipe.frequency": "Сеть: %s",
   "tooltip.bonepipe.owner": "Владелец: %s",
-  "tooltip.bonepipe.nodes": "Узлов: %d"
+  "tooltip.bonepipe.nodes": "Узлов: %d",
+  
+  "tooltip.bonepipe.upgrade.speed": "Увеличивает скорость передачи",
+  "tooltip.bonepipe.upgrade.filter": "Добавляет фильтрацию предметов/жидкостей",
+  "tooltip.bonepipe.upgrade.range": "Увеличивает дальность беспроводной связи",
+  "tooltip.bonepipe.upgrade.stack": "Увеличивает размер стека за передачу"
 }

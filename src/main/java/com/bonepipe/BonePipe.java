@@ -1,6 +1,7 @@
 package com.bonepipe;
 
 import com.bonepipe.core.Registration;
+import com.bonepipe.network.packets.NetworkHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -34,7 +35,7 @@ public class BonePipe {
         
         // Инициализация сети, интеграций и т.д.
         event.enqueueWork(() -> {
-            // Packet registration will go here
+            NetworkHandler.register();
             LOGGER.info("BonePipe packet handler initialized");
         });
     }

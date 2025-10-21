@@ -1,6 +1,12 @@
 {
   "block.bonepipe.adapter": "Wireless Adapter",
   
+  "item.bonepipe.adapter": "Wireless Adapter",
+  "item.bonepipe.speed_upgrade": "Speed Upgrade",
+  "item.bonepipe.filter_upgrade": "Filter Upgrade",
+  "item.bonepipe.range_upgrade": "Range Upgrade",
+  "item.bonepipe.stack_upgrade": "Stack Size Upgrade",
+  
   "container.bonepipe.adapter": "Wireless Adapter",
   
   "itemGroup.bonepipe": "BonePipe",
@@ -32,5 +38,10 @@
   "tooltip.bonepipe.adapter": "Wireless resource transfer§7Place next to any machine",
   "tooltip.bonepipe.frequency": "Network: %s",
   "tooltip.bonepipe.owner": "Owner: %s",
-  "tooltip.bonepipe.nodes": "Nodes: %d"
+  "tooltip.bonepipe.nodes": "Nodes: %d",
+  
+  "tooltip.bonepipe.upgrade.speed": "Increases transfer rate",
+  "tooltip.bonepipe.upgrade.filter": "Adds item/fluid filtering",
+  "tooltip.bonepipe.upgrade.range": "Increases wireless range",
+  "tooltip.bonepipe.upgrade.stack": "Increases stack size per transfer"
 }
