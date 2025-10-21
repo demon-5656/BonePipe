@@ -28,12 +28,12 @@ public class TransferScheduler {
      * Register all default transfer handlers
      */
     private void registerDefaultHandlers() {
-        // TODO: Register handlers as they are implemented
-        // registerHandler(new ItemTransferHandler());
-        // registerHandler(new FluidTransferHandler());
-        // registerHandler(new EnergyTransferHandler());
+        // Register handlers
+        registerHandler(new ItemTransferHandler());
+        // TODO: registerHandler(new FluidTransferHandler());
+        // TODO: registerHandler(new EnergyTransferHandler());
         
-        BonePipe.LOGGER.debug("TransferScheduler initialized");
+        BonePipe.LOGGER.debug("TransferScheduler initialized with {} handlers", handlers.size());
     }
     
     /**
