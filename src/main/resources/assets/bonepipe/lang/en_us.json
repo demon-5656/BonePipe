@@ -1,0 +1,36 @@
+{
+  "block.bonepipe.adapter": "Wireless Adapter",
+  
+  "container.bonepipe.adapter": "Wireless Adapter",
+  
+  "itemGroup.bonepipe": "BonePipe",
+  
+  "gui.bonepipe.frequency": "Frequency",
+  "gui.bonepipe.access_mode": "Access Mode",
+  "gui.bonepipe.access_mode.public": "Public",
+  "gui.bonepipe.access_mode.private": "Private",
+  "gui.bonepipe.access_mode.trusted": "Trusted",
+  
+  "gui.bonepipe.channel.items": "Items",
+  "gui.bonepipe.channel.fluids": "Fluids",
+  "gui.bonepipe.channel.energy": "Energy",
+  "gui.bonepipe.channel.mek_gas": "Gas",
+  "gui.bonepipe.channel.mek_infuse": "Infusion",
+  "gui.bonepipe.channel.mek_pigment": "Pigment",
+  "gui.bonepipe.channel.mek_slurry": "Slurry",
+  "gui.bonepipe.channel.redstone": "Redstone",
+  
+  "gui.bonepipe.mode.disabled": "Disabled",
+  "gui.bonepipe.mode.input": "Input",
+  "gui.bonepipe.mode.output": "Output",
+  "gui.bonepipe.mode.both": "Both",
+  
+  "gui.bonepipe.network": "Network",
+  "gui.bonepipe.nodes": "Nodes",
+  "gui.bonepipe.statistics": "Statistics",
+  
+  "tooltip.bonepipe.adapter": "Wireless resource transfer§7Place next to any machine",
+  "tooltip.bonepipe.frequency": "Network: %s",
+  "tooltip.bonepipe.owner": "Owner: %s",
+  "tooltip.bonepipe.nodes": "Nodes: %d"
+}

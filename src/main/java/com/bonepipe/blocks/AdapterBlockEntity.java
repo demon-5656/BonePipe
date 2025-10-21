@@ -38,7 +38,7 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private int tickCounter = 0;
 
     public AdapterBlockEntity(BlockPos pos, BlockState state) {
-        super(null, pos, state); // TODO: Set proper BlockEntityType
+        super(com.bonepipe.core.Registration.ADAPTER_BE.get(), pos, state);
         
         // Initialize side configs
         for (Direction dir : Direction.values()) {

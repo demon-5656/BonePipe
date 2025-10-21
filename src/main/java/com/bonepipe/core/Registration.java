@@ -1,12 +1,17 @@
 package com.bonepipe.core;
 
 import com.bonepipe.BonePipe;
+import com.bonepipe.blocks.AdapterBlock;
+import com.bonepipe.blocks.AdapterBlockEntity;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 /**
  * Central registration class for all mod content
@@ -24,7 +29,24 @@ public class Registration {
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, BonePipe.MOD_ID);
     
     // TODO: Add MENUS register for containers
-    // TODO: Add CREATIVE_TABS register
+    
+    // ========== BLOCKS ==========
+    
+    public static final RegistryObject<Block> ADAPTER_BLOCK = BLOCKS.register("adapter",
+        AdapterBlock::new);
+    
+    // ========== ITEMS ==========
+    
+    public static final RegistryObject<Item> ADAPTER_ITEM = ITEMS.register("adapter",
+        () -> new BlockItem(ADAPTER_BLOCK.get(), 
+            new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
+    
+    // ========== BLOCK ENTITIES ==========
+    
+    public static final RegistryObject<BlockEntityType<AdapterBlockEntity>> ADAPTER_BE = 
+        BLOCK_ENTITIES.register("adapter",
+            () -> BlockEntityType.Builder.of(AdapterBlockEntity::new, ADAPTER_BLOCK.get())
+                .build(null));
     
     /**
      * Initialize all registrations
