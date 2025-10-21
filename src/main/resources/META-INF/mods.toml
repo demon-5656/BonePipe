@@ -1,0 +1,36 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://github.com/demon-5656/BonePipe/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+updateJSONURL="https://raw.githubusercontent.com/demon-5656/BonePipe/main/update.json"
+displayURL="https://github.com/demon-5656/BonePipe"
+logoFile="logo.png"
+credits="Mekanism Team for inspiration, Pipez for upgrade card concept"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+[[dependencies.bonepipe]]
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.bonepipe]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.bonepipe]]
+    modId="mekanism"
+    mandatory=false
+    versionRange="[10.3.0,11.0)"
+    ordering="AFTER"
+    side="BOTH"
