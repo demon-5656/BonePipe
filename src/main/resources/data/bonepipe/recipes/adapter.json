@@ -1,23 +1,26 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "IRI",
-    "RER",
-    "IRI"
+    "BCB",
+    "RGR",
+    "BCB"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
+    "B": {
+      "item": "minecraft:bone_block"
+    },
+    "C": {
+      "item": "minecraft:copper_block"
     },
     "R": {
-      "item": "minecraft:redstone"
+      "item": "minecraft:redstone_block"
     },
-    "E": {
-      "item": "minecraft:ender_pearl"
+    "G": {
+      "item": "minecraft:glass_pane"
     }
   },
   "result": {
     "item": "bonepipe:adapter",
-    "count": 1
+    "count": 2
   }
 }

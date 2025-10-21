@@ -3,7 +3,10 @@ package com.bonepipe.core;
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlock;
 import com.bonepipe.blocks.AdapterBlockEntity;
+import com.bonepipe.blocks.ControllerBlock;
+import com.bonepipe.blocks.ControllerBlockEntity;
 import com.bonepipe.gui.AdapterMenu;
+import com.bonepipe.gui.ControllerMenu;
 import com.bonepipe.items.UpgradeCardItem;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
@@ -40,10 +43,17 @@ public class Registration {
     public static final RegistryObject<Block> ADAPTER_BLOCK = BLOCKS.register("adapter",
         AdapterBlock::new);
     
+    public static final RegistryObject<Block> CONTROLLER_BLOCK = BLOCKS.register("controller",
+        ControllerBlock::new);
+    
     // ========== ITEMS ==========
     
     public static final RegistryObject<Item> ADAPTER_ITEM = ITEMS.register("adapter",
         () -> new BlockItem(ADAPTER_BLOCK.get(), 
+            new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
+    
+    public static final RegistryObject<Item> CONTROLLER_ITEM = ITEMS.register("controller",
+        () -> new BlockItem(CONTROLLER_BLOCK.get(), 
             new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
     
     // Upgrade cards
@@ -59,6 +69,9 @@ public class Registration {
     public static final RegistryObject<Item> STACK_UPGRADE = ITEMS.register("stack_upgrade",
         () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.STACK));
     
+    public static final RegistryObject<Item> CAPACITY_UPGRADE = ITEMS.register("capacity_upgrade",
+        () -> new UpgradeCardItem(UpgradeCardItem.UpgradeType.CAPACITY));
+    
     // ========== BLOCK ENTITIES ==========
     
     public static final RegistryObject<BlockEntityType<AdapterBlockEntity>> ADAPTER_BE = 
@@ -66,11 +79,20 @@ public class Registration {
             () -> BlockEntityType.Builder.of(AdapterBlockEntity::new, ADAPTER_BLOCK.get())
                 .build(null));
     
+    public static final RegistryObject<BlockEntityType<ControllerBlockEntity>> CONTROLLER_BE = 
+        BLOCK_ENTITIES.register("controller",
+            () -> BlockEntityType.Builder.of(ControllerBlockEntity::new, CONTROLLER_BLOCK.get())
+                .build(null));
+    
     // ========== MENUS ==========
     
     public static final RegistryObject<MenuType<AdapterMenu>> ADAPTER_MENU = 
         MENUS.register("adapter",
             () -> IForgeMenuType.create(AdapterMenu::new));
+    
+    public static final RegistryObject<MenuType<ControllerMenu>> CONTROLLER_MENU = 
+        MENUS.register("controller",
+            () -> IForgeMenuType.create(ControllerMenu::new));
     
     /**
      * Initialize all registrations

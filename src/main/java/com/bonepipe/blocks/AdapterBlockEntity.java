@@ -6,13 +6,16 @@ import com.bonepipe.items.UpgradeCardItem;
 import com.bonepipe.network.FrequencyKey;
 import com.bonepipe.network.NetworkManager;
 import com.bonepipe.network.NetworkNode;
+import com.bonepipe.network.NetworkStatistics;
 import com.bonepipe.network.WirelessNetwork;
+import com.bonepipe.util.ChunkLoadManager;
 import com.bonepipe.util.MachineDetector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -59,6 +62,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     // Network registration
     private boolean registeredInNetwork = false;
     
+    // Chunk loading
+    private UUID chunkLoadTicketId = null;
+    private boolean chunkLoadingEnabled = false;
+    
     // Activity tracking
     private int lastTransferTick = 0;
     private long totalTransferred = 0;
@@ -82,6 +89,14 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private double rangeMultiplier = 1.0;
     private int stackBonus = 0;
     private boolean hasFilter = false;
+    private int totalFilterSlots = 0; // Total filter slots from Capacity upgrades
+    
+    // Transfer metrics
+    private long totalItemsTransferred = 0;
+    private long totalFluidsTransferred = 0;
+    private long totalEnergyTransferred = 0;
+    private long lastTransferTime = 0;
+    private long peakTransferRate = 0;
     
     // Tick counter
     private int tickCounter = 0;
@@ -103,6 +118,7 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         rangeMultiplier = 1.0;
         stackBonus = 0;
         hasFilter = false;
+        totalFilterSlots = 0;
         
         for (int i = 0; i < upgradeInventory.getSlots(); i++) {
             ItemStack stack = upgradeInventory.getStackInSlot(i);
@@ -112,14 +128,15 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
                 speedMultiplier *= type.speedMultiplier;
                 rangeMultiplier += type.rangeMultiplier;
                 stackBonus += type.stackBonus;
+                totalFilterSlots += type.filterSlots;
                 if (type == UpgradeCardItem.UpgradeType.FILTER) {
                     hasFilter = true;
                 }
             }
         }
         
-        BonePipe.LOGGER.debug("Adapter at {} upgrades: speed={}x, range={}x, stack=+{}, filter={}", 
-            worldPosition, speedMultiplier, rangeMultiplier, stackBonus, hasFilter);
+        BonePipe.LOGGER.debug("Adapter at {} upgrades: speed={}x, range={}x, stack=+{}, filter={}, filterSlots={}", 
+            worldPosition, speedMultiplier, rangeMultiplier, stackBonus, hasFilter, totalFilterSlots);
     }
 
     /**
@@ -250,35 +267,100 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         if (level == null || owner == null || frequency.isEmpty()) {
             return;
         }
-        
+
         FrequencyKey key = new FrequencyKey(owner, frequency);
-        WirelessNetwork network = NetworkManager.getInstance().getOrCreateNetwork(key);
         NetworkNode node = new NetworkNode(level, worldPosition, key);
+        
+        NetworkManager manager = NetworkManager.getInstance();
+        WirelessNetwork network = manager.getOrCreateNetwork(key);
         network.addNode(node);
         
         registeredInNetwork = true;
-        BonePipe.LOGGER.debug("Adapter at {} registered in network {}", worldPosition, key);
+        
+        // Enable chunk loading for this adapter
+        enableChunkLoading();
+        
+        // Play connect sound
+        if (!level.isClientSide()) {
+            level.playSound(null, worldPosition, 
+                com.bonepipe.core.Sounds.CONNECT.get(), 
+                net.minecraft.sounds.SoundSource.BLOCKS, 
+                0.5f, 1.0f);
+        }
+        
+        BonePipe.LOGGER.info("Adapter at {} registered in network {}", worldPosition, key);
     }
-    
+
     /**
      * Unregister from network
      */
     private void unregisterFromNetwork() {
-        if (!registeredInNetwork || owner == null || frequency.isEmpty()) {
+        if (level == null || owner == null || frequency.isEmpty()) {
+            registeredInNetwork = false;
+            disableChunkLoading();
             return;
         }
-        
+
         FrequencyKey key = new FrequencyKey(owner, frequency);
-        WirelessNetwork network = NetworkManager.getInstance().getNetwork(key);
+        NetworkNode node = new NetworkNode(level, worldPosition, key);
+        
+        NetworkManager manager = NetworkManager.getInstance();
+        WirelessNetwork network = manager.getNetwork(key);
         if (network != null) {
-            NetworkNode node = new NetworkNode(level, worldPosition, key);
             network.removeNode(node);
-            BonePipe.LOGGER.debug("Adapter at {} unregistered from network {}", worldPosition, key);
         }
         
         registeredInNetwork = false;
+        
+        // Disable chunk loading
+        disableChunkLoading();
+        
+        // Play disconnect sound
+        if (!level.isClientSide()) {
+            level.playSound(null, worldPosition, 
+                com.bonepipe.core.Sounds.DISCONNECT.get(), 
+                net.minecraft.sounds.SoundSource.BLOCKS, 
+                0.5f, 0.8f);
+        }
+        
+        BonePipe.LOGGER.debug("Adapter at {} unregistered from network", worldPosition);
     }
-
+    
+    /**
+     * Enable chunk loading for this adapter
+     */
+    private void enableChunkLoading() {
+        if (level == null || level.isClientSide() || chunkLoadingEnabled) {
+            return;
+        }
+        
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        
+        // Generate unique ticket ID if not exists
+        if (chunkLoadTicketId == null) {
+            chunkLoadTicketId = UUID.randomUUID();
+        }
+        
+        ChunkLoadManager.loadChunk(serverLevel, worldPosition, chunkLoadTicketId);
+        chunkLoadingEnabled = true;
+        BonePipe.LOGGER.info("Chunk loading enabled for adapter at {}", worldPosition);
+    }
+    
+    /**
+     * Disable chunk loading for this adapter
+     */
+    private void disableChunkLoading() {
+        if (!chunkLoadingEnabled || chunkLoadTicketId == null) {
+            return;
+        }
+        
+        ChunkLoadManager.unloadChunk(chunkLoadTicketId);
+        chunkLoadingEnabled = false;
+        BonePipe.LOGGER.info("Chunk loading disabled for adapter at {}", worldPosition);
+    }
+    
     /**
      * Called when block is removed
      */
@@ -299,7 +381,25 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putString("accessMode", accessMode.name());
         tag.put("upgradeInventory", upgradeInventory.serializeNBT());
         tag.putLong("totalTransferred", totalTransferred);
-        // TODO: Save side configs
+        
+        // Save chunk loading state
+        if (chunkLoadTicketId != null) {
+            tag.putUUID("chunkLoadTicketId", chunkLoadTicketId);
+        }
+        tag.putBoolean("chunkLoadingEnabled", chunkLoadingEnabled);
+        
+        // Save side configs
+        CompoundTag sideConfigsTag = new CompoundTag();
+        for (Direction dir : Direction.values()) {
+            SideConfig config = sideConfigs.get(dir);
+            if (config != null) {
+                CompoundTag sideTag = new CompoundTag();
+                sideTag.putBoolean("enabled", config.enabled);
+                sideTag.putString("mode", config.mode.name());
+                sideConfigsTag.put(dir.getName(), sideTag);
+            }
+        }
+        tag.put("sideConfigs", sideConfigsTag);
     }
 
     @Override
@@ -319,7 +419,37 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         if (tag.contains("totalTransferred")) {
             totalTransferred = tag.getLong("totalTransferred");
         }
-        // TODO: Load side configs
+        
+        // Load chunk loading state
+        if (tag.hasUUID("chunkLoadTicketId")) {
+            chunkLoadTicketId = tag.getUUID("chunkLoadTicketId");
+        }
+        if (tag.contains("chunkLoadingEnabled")) {
+            boolean wasEnabled = tag.getBoolean("chunkLoadingEnabled");
+            // Re-enable chunk loading if it was enabled before
+            if (wasEnabled && !level.isClientSide()) {
+                enableChunkLoading();
+            }
+        }
+        
+        // Load side configs
+        if (tag.contains("sideConfigs")) {
+            CompoundTag sideConfigsTag = tag.getCompound("sideConfigs");
+            for (Direction dir : Direction.values()) {
+                if (sideConfigsTag.contains(dir.getName())) {
+                    CompoundTag sideTag = sideConfigsTag.getCompound(dir.getName());
+                    SideConfig config = sideConfigs.get(dir);
+                    if (config == null) {
+                        config = new SideConfig();
+                        sideConfigs.put(dir, config);
+                    }
+                    config.enabled = sideTag.getBoolean("enabled");
+                    if (sideTag.contains("mode")) {
+                        config.mode = SideConfig.TransferMode.valueOf(sideTag.getString("mode"));
+                    }
+                }
+            }
+        }
     }
 
     // MenuProvider implementation
@@ -429,7 +559,7 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     /**
-     * Get stack size bonus from upgrades
+     * Get stack bonus from upgrades
      */
     public int getStackBonus() {
         return stackBonus;
@@ -440,6 +570,151 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
      */
     public boolean hasFilterUpgrade() {
         return hasFilter;
+    }
+    
+    /**
+     * Get total available filter slots from Capacity upgrades
+     * Base: 1 slot with Filter card, +9 per Capacity card
+     */
+    public int getTotalFilterSlots() {
+        return hasFilter ? Math.max(1, totalFilterSlots) : 0;
+    }
+    
+    /**
+     * Record transfer for metrics tracking
+     */
+    public void recordTransfer(NetworkStatistics.TransferType type, long amount) {
+        switch (type) {
+            case ITEMS -> totalItemsTransferred += amount;
+            case FLUIDS -> totalFluidsTransferred += amount;
+            case ENERGY -> totalEnergyTransferred += amount;
+        }
+        
+        lastTransferTime = System.currentTimeMillis();
+        
+        // Update peak rate
+        if (amount > peakTransferRate) {
+            peakTransferRate = amount;
+        }
+        
+        setChanged();
+    }
+    
+    /**
+     * Get transfer metrics for statistics display
+     */
+    public TransferMetrics getMetrics() {
+        long uptime = level != null ? level.getGameTime() * 50 : 0; // ticks to ms
+        return new TransferMetrics(
+            totalItemsTransferred,
+            totalFluidsTransferred,
+            totalEnergyTransferred,
+            lastTransferTime,
+            peakTransferRate,
+            uptime
+        );
+    }
+    
+    /**
+     * Container for transfer metrics
+     */
+    public static class TransferMetrics {
+        public final long totalItems;
+        public final long totalFluids;
+        public final long totalEnergy;
+        public final long lastTransferTime;
+        public final long peakRate;
+        public final long uptime;
+        
+        public TransferMetrics(long totalItems, long totalFluids, long totalEnergy,
+                             long lastTransferTime, long peakRate, long uptime) {
+            this.totalItems = totalItems;
+            this.totalFluids = totalFluids;
+            this.totalEnergy = totalEnergy;
+            this.lastTransferTime = lastTransferTime;
+            this.peakRate = peakRate;
+            this.uptime = uptime;
+        }
+        
+        public boolean isActive() {
+            return (System.currentTimeMillis() - lastTransferTime) < 5000;
+        }
+        
+        public long getTotal() {
+            return totalItems + totalFluids + totalEnergy;
+        }
+    }    /**
+     * Check if adapter is enabled (has machine connected)
+     */
+    public boolean isEnabled() {
+        return connectedMachine != null && !frequency.isEmpty();
+    }
+    
+    /**
+     * Get side configuration for a direction
+     */
+    public SideConfig getSideConfig(Direction direction) {
+        return sideConfigs.get(direction);
+    }
+    
+    /**
+     * Get connected machine BlockEntity
+     */
+    public BlockEntity getConnectedMachine() {
+        return connectedMachine;
+    }
+    
+    /**
+     * Record a successful transfer (for statistics)
+     */
+    public void recordTransfer(long amount) {
+        if (level != null) {
+            this.lastTransferTick = level.getGameTime();
+            this.totalTransferred += amount;
+            
+            // Update ACTIVE blockstate
+            BlockState state = getBlockState();
+            if (state.hasProperty(AdapterBlock.ACTIVE) && !state.getValue(AdapterBlock.ACTIVE)) {
+                level.setBlock(worldPosition, state.setValue(AdapterBlock.ACTIVE, true), 3);
+            }
+            
+            // Play transfer sound (occasional, not every tick)
+            if (!level.isClientSide() && level.random.nextInt(20) == 0) {
+                level.playSound(null, worldPosition, 
+                    com.bonepipe.core.Sounds.TRANSFER.get(), 
+                    net.minecraft.sounds.SoundSource.BLOCKS, 
+                    0.3f, 0.9f + level.random.nextFloat() * 0.2f);
+            }
+            
+            // Spawn particles (client-side)
+            if (level.isClientSide() && level.random.nextInt(10) == 0) {
+                spawnTransferParticles();
+            }
+        }
+    }
+    
+    /**
+     * Spawn visual particles when transfer occurs
+     */
+    private void spawnTransferParticles() {
+        if (level != null && level.isClientSide()) {
+            // Spawn portal-like particles
+            for (int i = 0; i < 3; i++) {
+                double offsetX = (level.random.nextDouble() - 0.5) * 0.5;
+                double offsetY = level.random.nextDouble() * 0.5;
+                double offsetZ = (level.random.nextDouble() - 0.5) * 0.5;
+                
+                level.addParticle(
+                    net.minecraft.core.particles.ParticleTypes.PORTAL,
+                    worldPosition.getX() + 0.5 + offsetX,
+                    worldPosition.getY() + 0.5 + offsetY,
+                    worldPosition.getZ() + 0.5 + offsetZ,
+                    (level.random.nextDouble() - 0.5) * 0.1,
+                    level.random.nextDouble() * 0.1,
+                    (level.random.nextDouble() - 0.5) * 0.1
+                );
+            }
+        }
     }
 
     // Inner classes
@@ -452,13 +727,46 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     public static class SideConfig {
         private boolean enabled = false;
         private TransferMode mode = TransferMode.DISABLED;
-        // TODO: Add filter, slot/tank selection, etc.
+        
+        // Item filtering
+        private java.util.List<net.minecraft.world.item.ItemStack> itemWhitelist = new java.util.ArrayList<>();
+        private boolean itemWhitelistEnabled = false;
+        
+        // Fluid filtering
+        private java.util.Set<net.minecraft.resources.ResourceLocation> fluidWhitelist = new java.util.HashSet<>();
+        private boolean fluidWhitelistEnabled = false;
 
         public enum TransferMode {
             DISABLED,
             INPUT,
             OUTPUT,
             BOTH
+        }
+        
+        /**
+         * Check if an item passes the filter
+         */
+        public boolean matchesItemFilter(net.minecraft.world.item.ItemStack stack) {
+            if (!itemWhitelistEnabled || itemWhitelist.isEmpty()) {
+                return true; // No filter = allow all
+            }
+            
+            for (net.minecraft.world.item.ItemStack filter : itemWhitelist) {
+                if (net.minecraft.world.item.ItemStack.isSame(stack, filter)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        /**
+         * Check if a fluid passes the filter
+         */
+        public boolean matchesFluidFilter(net.minecraft.resources.ResourceLocation fluidId) {
+            if (!fluidWhitelistEnabled || fluidWhitelist.isEmpty()) {
+                return true; // No filter = allow all
+            }
+            return fluidWhitelist.contains(fluidId);
         }
     }
 }

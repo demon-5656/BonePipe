@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "IPI",
-    "PGP",
+    "PBP",
     "IPI"
   ],
   "key": {
@@ -12,8 +12,8 @@
     "P": {
       "item": "minecraft:paper"
     },
-    "G": {
-      "item": "minecraft:gold_ingot"
+    "B": {
+      "item": "minecraft:bone"
     }
   },
   "result": {

@@ -61,6 +61,14 @@ repositories {
         name = "Mekanism"
         url = "https://modmaven.dev/"
     }
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+    maven {
+        name = "ModMaven"
+        url = "https://modmaven.dev/"
+    }
 }
 
 dependencies {
@@ -68,6 +76,14 @@ dependencies {
     
     // Mekanism (compileOnly для soft dependency)
     compileOnly fg.deobf("mekanism:Mekanism:${mekanism_version}")
+    
+    // JEI (compileOnly + runtimeOnly)
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+    
+    // The One Probe (compileOnly для soft dependency)
+    compileOnly fg.deobf("mcjty.theoneprobe:theoneprobe:${top_version}")
     
     // Uncomment for runtime testing with Mekanism
     // runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}")

@@ -7,7 +7,10 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraftforge.items.SlotItemHandler;
 
 /**
  * Container menu for Wireless Adapter GUI
@@ -26,7 +29,26 @@ public class AdapterMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
-        // No slots needed for configuration menu
+        // Add upgrade slots (4 slots in a row at the bottom)
+        // Position: x=44, y=142 (bottom area of GUI)
+        for (int i = 0; i < 4; i++) {
+            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 142));
+        }
+        
+        // Add player inventory (standard 3x9 grid)
+        // Position: x=8, y=84
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 
+                    8 + col * 18, 84 + row * 18));
+            }
+        }
+        
+        // Add player hotbar (bottom row)
+        // Position: x=8, y=142
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+        }
     }
     
     /**
@@ -57,11 +79,48 @@ public class AdapterMenu extends AbstractContainerMenu {
     
     /**
      * Handle quick move (shift-click)
-     * Not used in this menu
+     * Supports moving upgrade cards and items between inventories
      */
     @Override
-    public net.minecraft.world.item.ItemStack quickMoveStack(Player player, int index) {
-        return net.minecraft.world.item.ItemStack.EMPTY;
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack itemstack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        
+        if (slot != null && slot.hasItem()) {
+            ItemStack slotStack = slot.getItem();
+            itemstack = slotStack.copy();
+            
+            int upgradeSlots = 4;
+            int playerInvStart = upgradeSlots;
+            int playerInvEnd = playerInvStart + 36;
+            
+            // From upgrade slots to player inventory
+            if (index < upgradeSlots) {
+                if (!this.moveItemStackTo(slotStack, playerInvStart, playerInvEnd, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+            // From player inventory to upgrade slots
+            else {
+                if (!this.moveItemStackTo(slotStack, 0, upgradeSlots, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+            
+            if (slotStack.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+            
+            if (slotStack.getCount() == itemstack.getCount()) {
+                return ItemStack.EMPTY;
+            }
+            
+            slot.onTake(player, slotStack);
+        }
+        
+        return itemstack;
     }
     
     /**

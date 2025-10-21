@@ -2,6 +2,11 @@ package com.bonepipe.gui;
 
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
+import com.bonepipe.gui.widgets.FrequencyTextField;
+import com.bonepipe.gui.widgets.StatusIndicator;
+import com.bonepipe.gui.widgets.ToggleButton;
+import com.bonepipe.network.NetworkHandler;
+import com.bonepipe.network.packets.UpdateSideConfigPacket;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -39,6 +44,11 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     
     private Tab currentTab = Tab.ITEMS;
     
+    // Widgets
+    private FrequencyTextField frequencyField;
+    private ToggleButton enableButton;
+    private StatusIndicator statusIndicator;
+    
     public AdapterScreen(AdapterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
@@ -48,7 +58,83 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     @Override
     protected void init() {
         super.init();
-        // TODO: Add buttons and widgets
+        
+        int x = (this.width - this.imageWidth) / 2;
+        int y = (this.height - this.imageHeight) / 2;
+        
+        // Initialize widgets based on current tab
+        initializeWidgets(x, y);
+    }
+    
+    /**
+     * Initialize widgets for current tab
+     */
+    private void initializeWidgets(int x, int y) {
+        // Clear existing widgets
+        this.clearWidgets();
+        
+        AdapterBlockEntity be = menu.getBlockEntity();
+        
+        switch (currentTab) {
+            case NETWORK -> {
+                // Frequency text field
+                frequencyField = new FrequencyTextField(
+                    this.font, x + 50, y + 35, 100, 18,
+                    Component.translatable("gui.bonepipe.frequency"),
+                    freq -> {
+                        // Validate frequency before sending
+                        if (freq != null && !freq.isEmpty()) {
+                            if (FrequencyTextField.isValidFrequency(freq)) {
+                                // Send frequency update to server
+                                NetworkHandler.CHANNEL.sendToServer(
+                                    new UpdateFrequencyPacket(be.getBlockPos(), freq)
+                                );
+                            } else {
+                                // Show error feedback
+                                frequencyField.setTextColor(0xFF0000);
+                                BonePipe.LOGGER.warn("Invalid frequency format: {}", freq);
+                            }
+                        }
+                    }
+                );
+                String currentFreq = be.getFrequency();
+                frequencyField.setValue(currentFreq != null ? currentFreq : "");
+                this.addRenderableWidget(frequencyField);
+                
+                // Status indicator
+                statusIndicator = new StatusIndicator(
+                    x + 8, y + 60, 16, 16,
+                    be.isEnabled() ? StatusIndicator.Status.CONNECTED : StatusIndicator.Status.DISCONNECTED
+                );
+                this.addRenderableWidget(statusIndicator);
+            }
+            case ITEMS, FLUIDS -> {
+                // Enable/Disable toggle
+                enableButton = new ToggleButton(
+                    x + 100, y + 30, 60, 20,
+                    Component.translatable("gui.bonepipe.enable"),
+                    be.isEnabled(),
+                    enabled -> {
+                        // Send enable/disable packet for current machine direction
+                        if (be.getMachineDirection() != null) {
+                            var mode = enabled ? 
+                                AdapterBlockEntity.SideConfig.TransferMode.BOTH : 
+                                AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
+                            
+                            NetworkHandler.CHANNEL.sendToServer(
+                                new UpdateSideConfigPacket(
+                                    be.getBlockPos(), 
+                                    be.getMachineDirection(), 
+                                    enabled, 
+                                    mode
+                                )
+                            );
+                        }
+                    }
+                );
+                this.addRenderableWidget(enableButton);
+            }
+        }
     }
     
     @Override
@@ -88,7 +174,10 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             // Draw tab background
             this.blit(poseStack, tabX, tabY, 176, texY, TAB_WIDTH, TAB_HEIGHT);
             
-            // TODO: Draw tab icon
+            // Draw tab icon (16x16 from texture atlas)
+            int iconTexX = 206 + (tab.index * 18);
+            int iconTexY = 166;
+            this.blit(poseStack, tabX + 6, tabY + 8, iconTexX, iconTexY, 16, 16);
         }
     }
     
@@ -114,8 +203,32 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             8, 20, 0x404040);
         
         AdapterBlockEntity be = menu.getBlockEntity();
-        // TODO: Show item transfer configuration
-        this.font.draw(poseStack, "TODO: Item filters", 8, 35, 0x808080);
+        
+        // Show transfer status
+        boolean enabled = be.isEnabled();
+        this.font.draw(poseStack, 
+            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
+            8, 35, enabled ? 0x00AA00 : 0xAA0000);
+        
+        // Show upgrade bonuses
+        if (be.getSpeedMultiplier() > 1.0) {
+            this.font.draw(poseStack, 
+                Component.literal("Speed: " + String.format("%.1fx", be.getSpeedMultiplier())), 
+                8, 50, 0x404040);
+        }
+        
+        if (be.getStackBonus() > 0) {
+            this.font.draw(poseStack, 
+                Component.literal("Stack Bonus: +" + be.getStackBonus()), 
+                8, 60, 0x404040);
+        }
+        
+        if (be.hasFilterUpgrade()) {
+            int filterSlots = be.getTotalFilterSlots();
+            this.font.draw(poseStack, 
+                Component.literal("Filter Slots: " + filterSlots), 
+                8, 70, 0x00FFFF);
+        }
     }
     
     /**
@@ -124,8 +237,27 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     private void renderFluidsTab(PoseStack poseStack) {
         this.font.draw(poseStack, Component.translatable("gui.bonepipe.fluids.title"), 
             8, 20, 0x404040);
-        // TODO: Show fluid transfer configuration
-        this.font.draw(poseStack, "TODO: Fluid whitelist", 8, 35, 0x808080);
+        
+        AdapterBlockEntity be = menu.getBlockEntity();
+        
+        // Show transfer status
+        boolean enabled = be.isEnabled();
+        this.font.draw(poseStack, 
+            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
+            8, 35, enabled ? 0x00AA00 : 0xAA0000);
+        
+        // Show transfer rate with upgrades
+        long baseRate = 1000; // mB per tick
+        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
+        this.font.draw(poseStack, 
+            Component.literal("Transfer Rate: " + actualRate + " mB/tick"), 
+            8, 50, 0x404040);
+        
+        if (be.hasFilterUpgrade()) {
+            this.font.draw(poseStack, 
+                Component.literal("Whitelist: Not configured"), 
+                8, 65, 0x808080);
+        }
     }
     
     /**
@@ -136,8 +268,24 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             8, 20, 0x404040);
         
         AdapterBlockEntity be = menu.getBlockEntity();
-        // TODO: Show energy transfer rate
-        this.font.draw(poseStack, "TODO: Transfer rate", 8, 35, 0x808080);
+        
+        // Show transfer status
+        boolean enabled = be.isEnabled();
+        this.font.draw(poseStack, 
+            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
+            8, 35, enabled ? 0x00AA00 : 0xAA0000);
+        
+        // Show transfer rate with upgrades
+        long baseRate = 1000; // FE per tick
+        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
+        this.font.draw(poseStack, 
+            Component.literal("Transfer Rate: " + actualRate + " FE/tick"), 
+            8, 50, 0x404040);
+        
+        // Show statistics
+        this.font.draw(poseStack, 
+            Component.literal("Total Transferred: " + be.getTotalTransferred()), 
+            8, 65, 0x404040);
     }
     
     /**
@@ -174,7 +322,11 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             
             if (mouseX >= tabX && mouseX < tabX + TAB_WIDTH &&
                 mouseY >= tabY && mouseY < tabY + TAB_HEIGHT) {
-                currentTab = tab;
+                if (currentTab != tab) {
+                    currentTab = tab;
+                    // Reinitialize widgets for new tab
+                    initializeWidgets(x, y);
+                }
                 return true;
             }
         }

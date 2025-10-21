@@ -60,7 +60,14 @@ public class SyncAdapterDataPacket {
                     adapter.setFrequency(frequency);
                     adapter.setOwner(owner);
                     adapter.setAccessMode(accessMode);
-                    // TODO: Update connection status
+                    
+                    // Update connection status and blockstate
+                    if (connected != adapter.isEnabled()) {
+                        // Force client to update visuals
+                        mc.level.sendBlockUpdated(pos, 
+                            adapter.getBlockState(), 
+                            adapter.getBlockState(), 3);
+                    }
                 }
             }
         });

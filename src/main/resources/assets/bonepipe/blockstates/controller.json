@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=false": {
+      "model": "bonepipe:block/controller"
+    },
+    "active=true": {
+      "model": "bonepipe:block/controller_active"
+    }
+  }
+}

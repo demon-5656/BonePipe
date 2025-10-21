@@ -2,15 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     " R ",
-    "RGR",
+    "RBR",
     " R "
   ],
   "key": {
     "R": {
       "item": "minecraft:redstone"
     },
-    "G": {
-      "item": "minecraft:gold_ingot"
+    "B": {
+      "item": "minecraft:bone"
     }
   },
   "result": {

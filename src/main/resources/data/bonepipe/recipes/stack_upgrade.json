@@ -2,15 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "CCC",
-    "CGC",
+    "CBC",
     "CCC"
   ],
   "key": {
     "C": {
       "item": "minecraft:chest"
     },
-    "G": {
-      "item": "minecraft:gold_ingot"
+    "B": {
+      "item": "minecraft:bone"
     }
   },
   "result": {

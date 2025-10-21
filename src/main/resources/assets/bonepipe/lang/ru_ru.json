@@ -16,6 +16,19 @@
   "gui.bonepipe.access_mode.public": "Публичный",
   "gui.bonepipe.access_mode.private": "Приватный",
   "gui.bonepipe.access_mode.trusted": "Доверенный",
+  "gui.bonepipe.enable": "Включить",
+  "gui.bonepipe.disable": "Отключить",
+  "gui.bonepipe.status": "Статус",
+  
+  "gui.bonepipe.tab.items": "Предметы",
+  "gui.bonepipe.tab.fluids": "Жидкости",
+  "gui.bonepipe.tab.energy": "Энергия",
+  "gui.bonepipe.tab.network": "Сеть",
+  
+  "gui.bonepipe.items.title": "Передача предметов",
+  "gui.bonepipe.fluids.title": "Передача жидкостей",
+  "gui.bonepipe.energy.title": "Передача энергии",
+  "gui.bonepipe.network.title": "Настройка сети",
   
   "gui.bonepipe.channel.items": "Предметы",
   "gui.bonepipe.channel.fluids": "Жидкости",
@@ -35,6 +48,11 @@
   "gui.bonepipe.nodes": "Узлы",
   "gui.bonepipe.statistics": "Статистика",
   
+  "gui.bonepipe.status.connected": "Подключено",
+  "gui.bonepipe.status.disconnected": "Отключено",
+  "gui.bonepipe.status.active": "Активно",
+  "gui.bonepipe.status.error": "Ошибка",
+  
   "tooltip.bonepipe.adapter": "Беспроводной перенос ресурсов§7Разместите рядом с машиной",
   "tooltip.bonepipe.frequency": "Сеть: %s",
   "tooltip.bonepipe.owner": "Владелец: %s",
@@ -43,5 +61,13 @@
   "tooltip.bonepipe.upgrade.speed": "Увеличивает скорость передачи",
   "tooltip.bonepipe.upgrade.filter": "Добавляет фильтрацию предметов/жидкостей",
   "tooltip.bonepipe.upgrade.range": "Увеличивает дальность беспроводной связи",
-  "tooltip.bonepipe.upgrade.stack": "Увеличивает размер стека за передачу"
+  "tooltip.bonepipe.upgrade.stack": "Увеличивает размер стека за передачу",
+  
+  "tooltip.bonepipe.chunkloading": "Поддерживает чанк загруженным",
+  "tooltip.bonepipe.chunkloading.active": "§aЗагрузка чанка активна",
+  "tooltip.bonepipe.chunkloading.inactive": "§7Загрузка чанка неактивна",
+  
+  "bonepipe.subtitle.transfer": "Беспроводная передача",
+  "bonepipe.subtitle.connect": "Подключение к сети",
+  "bonepipe.subtitle.disconnect": "Отключение от сети"
 }

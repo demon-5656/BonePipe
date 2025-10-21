@@ -1,4 +1,4 @@
-package com.bonepipe.network;
+package com.bonepipe.network.packets;
 
 import com.bonepipe.BonePipe;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +17,9 @@ public class NetworkHandler {
         PROTOCOL_VERSION::equals,
         PROTOCOL_VERSION::equals
     );
+    
+    // Alias for backward compatibility
+    public static final SimpleChannel CHANNEL = INSTANCE;
     
     private static int packetId = 0;
     
@@ -39,6 +42,14 @@ public class NetworkHandler {
             UpdateAccessModePacket::encode,
             UpdateAccessModePacket::decode,
             UpdateAccessModePacket::handle
+        );
+        
+        INSTANCE.registerMessage(
+            nextId(),
+            UpdateSideConfigPacket.class,
+            UpdateSideConfigPacket::encode,
+            UpdateSideConfigPacket::decode,
+            UpdateSideConfigPacket::handle
         );
         
         // Server -> Client packets

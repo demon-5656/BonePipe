@@ -17,24 +17,27 @@ import java.util.List;
 public class UpgradeCardItem extends Item {
     
     public enum UpgradeType {
-        SPEED("Speed", "Increases transfer rate", 1.5, 0, 0),
-        FILTER("Filter", "Adds item/fluid filtering", 1.0, 0, 0),
-        RANGE("Range", "Increases wireless range", 1.0, 2.0, 0),
-        STACK("Stack Size", "Increases stack size per transfer", 1.0, 0, 4);
+        SPEED("Speed", "Increases transfer rate by 2x", 2.0, 0, 0, 0),
+        FILTER("Filter", "Adds item/fluid filtering", 1.0, 0, 0, 1),
+        RANGE("Range", "Increases wireless range by 2x", 1.0, 2.0, 0, 0),
+        STACK("Stack Size", "Increases stack size by +8", 1.0, 0, 8, 0),
+        CAPACITY("Filter Capacity", "Adds +9 filter slots", 1.0, 0, 0, 9);
         
         final String name;
         final String description;
         final double speedMultiplier;
         final double rangeMultiplier;
         final int stackBonus;
+        final int filterSlots; // New: number of filter slots this card provides
         
         UpgradeType(String name, String description, double speedMultiplier, 
-                   double rangeMultiplier, int stackBonus) {
+                   double rangeMultiplier, int stackBonus, int filterSlots) {
             this.name = name;
             this.description = description;
             this.speedMultiplier = speedMultiplier;
             this.rangeMultiplier = rangeMultiplier;
             this.stackBonus = stackBonus;
+            this.filterSlots = filterSlots;
         }
     }
     
@@ -66,6 +69,11 @@ public class UpgradeCardItem extends Item {
         if (upgradeType.stackBonus != 0) {
             tooltip.add(Component.literal("Stack Bonus: +" + upgradeType.stackBonus)
                 .withStyle(ChatFormatting.YELLOW));
+        }
+        
+        if (upgradeType.filterSlots > 0) {
+            tooltip.add(Component.literal("Filter Slots: +" + upgradeType.filterSlots)
+                .withStyle(ChatFormatting.AQUA));
         }
     }
     

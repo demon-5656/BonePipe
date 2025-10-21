@@ -1,0 +1,29 @@
+{
+  "transfer": {
+    "subtitle": "bonepipe.subtitle.transfer",
+    "sounds": [
+      {
+        "name": "bonepipe:transfer",
+        "stream": false
+      }
+    ]
+  },
+  "connect": {
+    "subtitle": "bonepipe.subtitle.connect",
+    "sounds": [
+      {
+        "name": "bonepipe:connect",
+        "stream": false
+      }
+    ]
+  },
+  "disconnect": {
+    "subtitle": "bonepipe.subtitle.disconnect",
+    "sounds": [
+      {
+        "name": "bonepipe:disconnect",
+        "stream": false
+      }
+    ]
+  }
+}

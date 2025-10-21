@@ -1,13 +1,17 @@
 {
   "block.bonepipe.adapter": "Wireless Adapter",
+  "block.bonepipe.controller": "Network Controller",
   
   "item.bonepipe.adapter": "Wireless Adapter",
+  "item.bonepipe.controller": "Network Controller",
   "item.bonepipe.speed_upgrade": "Speed Upgrade",
   "item.bonepipe.filter_upgrade": "Filter Upgrade",
   "item.bonepipe.range_upgrade": "Range Upgrade",
   "item.bonepipe.stack_upgrade": "Stack Size Upgrade",
+  "item.bonepipe.capacity_upgrade": "Filter Capacity Upgrade",
   
   "container.bonepipe.adapter": "Wireless Adapter",
+  "container.bonepipe.controller": "Network Controller",
   
   "itemGroup.bonepipe": "BonePipe",
   
@@ -16,6 +20,19 @@
   "gui.bonepipe.access_mode.public": "Public",
   "gui.bonepipe.access_mode.private": "Private",
   "gui.bonepipe.access_mode.trusted": "Trusted",
+  "gui.bonepipe.enable": "Enable",
+  "gui.bonepipe.disable": "Disable",
+  "gui.bonepipe.status": "Status",
+  
+  "gui.bonepipe.tab.items": "Items",
+  "gui.bonepipe.tab.fluids": "Fluids",
+  "gui.bonepipe.tab.energy": "Energy",
+  "gui.bonepipe.tab.network": "Network",
+  
+  "gui.bonepipe.items.title": "Item Transfer",
+  "gui.bonepipe.fluids.title": "Fluid Transfer",
+  "gui.bonepipe.energy.title": "Energy Transfer",
+  "gui.bonepipe.network.title": "Network Configuration",
   
   "gui.bonepipe.channel.items": "Items",
   "gui.bonepipe.channel.fluids": "Fluids",
@@ -35,7 +52,13 @@
   "gui.bonepipe.nodes": "Nodes",
   "gui.bonepipe.statistics": "Statistics",
   
+  "gui.bonepipe.status.connected": "Connected",
+  "gui.bonepipe.status.disconnected": "Disconnected",
+  "gui.bonepipe.status.active": "Active",
+  "gui.bonepipe.status.error": "Error",
+  
   "tooltip.bonepipe.adapter": "Wireless resource transfer§7Place next to any machine",
+  "tooltip.bonepipe.controller": "Network management§7Shows all adapters on frequency",
   "tooltip.bonepipe.frequency": "Network: %s",
   "tooltip.bonepipe.owner": "Owner: %s",
   "tooltip.bonepipe.nodes": "Nodes: %d",
@@ -43,5 +66,14 @@
   "tooltip.bonepipe.upgrade.speed": "Increases transfer rate",
   "tooltip.bonepipe.upgrade.filter": "Adds item/fluid filtering",
   "tooltip.bonepipe.upgrade.range": "Increases wireless range",
-  "tooltip.bonepipe.upgrade.stack": "Increases stack size per transfer"
+  "tooltip.bonepipe.upgrade.stack": "Increases stack size per transfer",
+  "tooltip.bonepipe.upgrade.capacity": "Adds +9 filter slots (like AE2 Capacity Cards)",
+  
+  "tooltip.bonepipe.chunkloading": "Keeps chunk loaded",
+  "tooltip.bonepipe.chunkloading.active": "§aChunk Loading Active",
+  "tooltip.bonepipe.chunkloading.inactive": "§7Chunk Loading Inactive",
+  
+  "bonepipe.subtitle.transfer": "Wireless Transfer",
+  "bonepipe.subtitle.connect": "Network Connected",
+  "bonepipe.subtitle.disconnect": "Network Disconnected"
 }
