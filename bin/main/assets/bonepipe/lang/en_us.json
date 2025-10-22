@@ -75,6 +75,10 @@
   "tooltip.bonepipe.chunkloading.active": "§aChunk Loading Active",
   "tooltip.bonepipe.chunkloading.inactive": "§7Chunk Loading Inactive",
   
+  "message.bonepipe.upgrade_installed": "Upgrade installed successfully",
+  "message.bonepipe.upgrade_failed": "All upgrade slots are full",
+  "message.bonepipe.upgrade_removed": "Upgrade removed",
+  
   "bonepipe.subtitle.transfer": "Wireless Transfer",
   "bonepipe.subtitle.connect": "Network Connected",
   "bonepipe.subtitle.disconnect": "Network Disconnected"

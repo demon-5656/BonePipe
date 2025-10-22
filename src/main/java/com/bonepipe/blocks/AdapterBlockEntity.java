@@ -545,6 +545,46 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     /**
+     * Install upgrade card directly into adapter
+     * @param stack The upgrade card stack to install
+     * @return true if successfully installed, false if all slots full
+     */
+    public boolean installUpgrade(ItemStack stack) {
+        if (!UpgradeCardItem.isUpgradeCard(stack)) {
+            return false;
+        }
+        
+        // Find first empty slot
+        for (int i = 0; i < upgradeInventory.getSlots(); i++) {
+            if (upgradeInventory.getStackInSlot(i).isEmpty()) {
+                upgradeInventory.setStackInSlot(i, stack.copy());
+                setChanged();
+                recalculateUpgrades();
+                return true;
+            }
+        }
+        
+        // All slots full
+        return false;
+    }
+    
+    /**
+     * Remove upgrade card from specified slot
+     * @param slot Slot index (0-3)
+     * @return The removed upgrade card, or ItemStack.EMPTY if slot was empty
+     */
+    public ItemStack removeUpgrade(int slot) {
+        if (slot < 0 || slot >= upgradeInventory.getSlots()) {
+            return ItemStack.EMPTY;
+        }
+        
+        ItemStack removed = upgradeInventory.extractItem(slot, 64, false);
+        setChanged();
+        recalculateUpgrades();
+        return removed;
+    }
+    
+    /**
      * Get speed multiplier from upgrades
      */
     public double getSpeedMultiplier() {

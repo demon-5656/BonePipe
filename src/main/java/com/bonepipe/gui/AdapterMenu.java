@@ -10,7 +10,6 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.items.SlotItemHandler;
 
 /**
  * Container menu for Wireless Adapter GUI
@@ -29,11 +28,7 @@ public class AdapterMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
-        // Add upgrade slots (4 slots in a row)
-        // Position: x=44, y=28 (in content area, below side config widget)
-        for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 68));
-        }
+        // NOTE: Upgrade slots removed - upgrades now installed by right-clicking adapter with upgrade card
         
         // Add player inventory (standard 3x9 grid)
         // Using Mekanism-style positioning: BASE_Y_OFFSET = 84
@@ -83,7 +78,7 @@ public class AdapterMenu extends AbstractContainerMenu {
     
     /**
      * Handle quick move (shift-click)
-     * Supports moving upgrade cards and items between inventories
+     * Note: No upgrade slots in GUI anymore - upgrades installed directly on adapter
      */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
@@ -94,21 +89,13 @@ public class AdapterMenu extends AbstractContainerMenu {
             ItemStack slotStack = slot.getItem();
             itemstack = slotStack.copy();
             
-            int upgradeSlots = 4;
-            int playerInvStart = upgradeSlots;
-            int playerInvEnd = playerInvStart + 36;
+            // All slots are player inventory (no custom slots)
+            int playerInvSize = 36;
             
-            // From upgrade slots to player inventory
-            if (index < upgradeSlots) {
-                if (!this.moveItemStackTo(slotStack, playerInvStart, playerInvEnd, false)) {
-                    return ItemStack.EMPTY;
-                }
-            }
-            // From player inventory to upgrade slots
-            else {
-                if (!this.moveItemStackTo(slotStack, 0, upgradeSlots, false)) {
-                    return ItemStack.EMPTY;
-                }
+            // Move between inventory sections
+            if (index < playerInvSize) {
+                // Already in player inventory, no other slots to move to
+                return ItemStack.EMPTY;
             }
             
             if (slotStack.isEmpty()) {
