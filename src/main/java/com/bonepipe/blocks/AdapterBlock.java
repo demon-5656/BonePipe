@@ -1,9 +1,7 @@
 package com.bonepipe.blocks;
 
-import com.bonepipe.items.UpgradeCardItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -74,30 +72,6 @@ public class AdapterBlock extends Block implements EntityBlock {
                                  Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide) {
             ItemStack heldItem = player.getItemInHand(hand);
-            
-            // Install upgrade card with right-click
-            if (heldItem.getItem() instanceof UpgradeCardItem) {
-                BlockEntity blockEntity = level.getBlockEntity(pos);
-                if (blockEntity instanceof AdapterBlockEntity adapter) {
-                    boolean installed = adapter.installUpgrade(heldItem);
-                    if (installed) {
-                        if (!player.isCreative()) {
-                            heldItem.shrink(1);
-                        }
-                        player.displayClientMessage(
-                            Component.translatable("message.bonepipe.upgrade_installed"), 
-                            true
-                        );
-                        return InteractionResult.CONSUME;
-                    } else {
-                        player.displayClientMessage(
-                            Component.translatable("message.bonepipe.upgrade_failed"), 
-                            true
-                        );
-                        return InteractionResult.FAIL;
-                    }
-                }
-            }
             
             // Rotate block on Shift + Right Click with empty hand
             if (player.isShiftKeyDown() && heldItem.isEmpty()) {
