@@ -30,24 +30,28 @@ public class AdapterMenu extends AbstractContainerMenu {
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
         // Add upgrade slots (4 slots in a row)
-        // Position: x=44, y=84 (bottom of content area, above inventory)
+        // Position: x=44, y=28 (in content area, below side config widget)
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 84));
+            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 68));
         }
         
         // Add player inventory (standard 3x9 grid)
-        // Position: x=8, y=112 (start of inventory section)
+        // Using Mekanism-style positioning: BASE_Y_OFFSET = 84
+        int yOffset = 84;
+        int xOffset = 8;
+        
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 
-                    8 + col * 18, 112 + row * 18));
+                    xOffset + col * 18, yOffset + row * 18));
             }
         }
         
         // Add player hotbar (bottom row)
-        // Position: x=8, y=170
+        // Position: yOffset + 58 (standard Minecraft inventory spacing)
+        yOffset += 58;
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 170));
+            this.addSlot(new Slot(playerInventory, col, xOffset + col * 18, yOffset));
         }
     }
     
