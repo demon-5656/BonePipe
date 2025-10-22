@@ -2,141 +2,82 @@ package com.bonepipe.gui;
 
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
-import com.bonepipe.gui.widgets.FrequencyTextField;
-import com.bonepipe.gui.widgets.SideConfigWidget;
-import com.bonepipe.gui.widgets.StatusIndicator;
-import com.bonepipe.gui.widgets.ToggleButton;
 import com.bonepipe.network.packets.NetworkHandler;
 import com.bonepipe.network.packets.UpdateFrequencyPacket;
-import com.bonepipe.network.packets.UpdateSideConfigPacket;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 /**
- * Client-side GUI screen for Wireless Adapter
- * Renders tabs for Items, Fluids, Energy, and Network configuration
+ * Mekanism-style GUI for Wireless Adapter
+ * Clean, professional design with side configuration
+ * 
+ * v3.0.0 - Complete rewrite based on Mekanism best practices
  */
 public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     
     private static final ResourceLocation TEXTURE = 
-        new ResourceLocation(BonePipe.MODID, "textures/gui/adapter.png");
+        new ResourceLocation(BonePipe.MODID, "textures/gui/adapter_new.png");
     
-    // Tab system
-    private static final int TAB_WIDTH = 28;
-    private static final int TAB_HEIGHT = 32;
-    private enum Tab {
-        ITEMS(0, Component.translatable("gui.bonepipe.tab.items")),
-        FLUIDS(1, Component.translatable("gui.bonepipe.tab.fluids")),
-        ENERGY(2, Component.translatable("gui.bonepipe.tab.energy")),
-        GAS(3, Component.translatable("gui.bonepipe.tab.gas")),
-        NETWORK(4, Component.translatable("gui.bonepipe.tab.network"));
-        
-        final int index;
-        final Component label;
-        
-        Tab(int index, Component label) {
-            this.index = index;
-            this.label = label;
-        }
-    }
+    // Mekanism-style dimensions
+    private static final int GUI_WIDTH = 176;
+    private static final int GUI_HEIGHT = 166;
+    private static final int BASE_Y_OFFSET = 84; // Player inventory Y position
     
-    private Tab currentTab = Tab.ITEMS;
+    // Widget areas
+    private static final int CONTENT_X = 8;
+    private static final int CONTENT_Y = 18;
+    private static final int CONTENT_WIDTH = 160;
+    private static final int CONTENT_HEIGHT = 58; // Fits before player inventory (84-18-8)
+    
+    // Side configuration
+    private static final int SIDE_BUTTON_SIZE = 18;
+    private static final int SIDE_BUTTONS_START_X = 8;
+    private static final int SIDE_BUTTONS_START_Y = 40;
     
     // Widgets
-    private FrequencyTextField frequencyField;
-    private ToggleButton enableButton;
-    private StatusIndicator statusIndicator;
-    private SideConfigWidget sideConfigWidget;
+    private EditBox frequencyField;
+    private Direction selectedSide = Direction.NORTH;
     
     public AdapterScreen(AdapterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 176;
-        this.imageHeight = 166; // Standard height: 84 (base offset) + 82 (inventory area)
-        this.inventoryLabelY = this.imageHeight - 94; // Mekanism formula: imageHeight - 94
-        this.titleLabelY = 5; // Standard title position
+        this.imageWidth = GUI_WIDTH;
+        this.imageHeight = GUI_HEIGHT;
+        this.inventoryLabelY = this.imageHeight - 94; // Mekanism formula
+        this.titleLabelY = 6;
     }
     
     @Override
     protected void init() {
         super.init();
         
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        int guiLeft = (this.width - this.imageWidth) / 2;
+        int guiTop = (this.height - this.imageHeight) / 2;
         
-        // Initialize widgets based on current tab
-        initializeWidgets(x, y);
+        // Frequency input field
+        frequencyField = new EditBox(
+            this.font,
+            guiLeft + 30, guiTop + 22,
+            100, 16,
+            Component.literal("Frequency")
+        );
+        frequencyField.setMaxLength(32);
+        frequencyField.setValue(menu.getBlockEntity().getFrequency());
+        frequencyField.setResponder(this::onFrequencyChanged);
+        this.addRenderableWidget(frequencyField);
     }
     
-    /**
-     * Initialize widgets for current tab
-     */
-    private void initializeWidgets(int x, int y) {
-        // Clear existing widgets
-        this.clearWidgets();
-        
-        AdapterBlockEntity be = menu.getBlockEntity();
-        
-        switch (currentTab) {
-            case NETWORK -> {
-                // Frequency text field
-                frequencyField = new FrequencyTextField(
-                    this.font, x + 50, y + 35, 100, 18,
-                    Component.translatable("gui.bonepipe.frequency"),
-                    freq -> {
-                        // Validate frequency before sending
-                        if (freq != null && !freq.isEmpty()) {
-                            if (FrequencyTextField.isValidFrequency(freq)) {
-                                // Send frequency update to server
-                                NetworkHandler.CHANNEL.sendToServer(
-                                    new UpdateFrequencyPacket(be.getBlockPos(), freq)
-                                );
-                            } else {
-                                // Show error feedback
-                                frequencyField.setTextColor(0xFF0000);
-                                BonePipe.LOGGER.warn("Invalid frequency format: {}", freq);
-                            }
-                        }
-                    }
-                );
-                String currentFreq = be.getFrequency();
-                frequencyField.setValue(currentFreq != null ? currentFreq : "");
-                this.addRenderableWidget(frequencyField);
-                
-                // Status indicator
-                statusIndicator = new StatusIndicator(
-                    x + 8, y + 60, 16, 16,
-                    be.isEnabled() ? StatusIndicator.Status.CONNECTED : StatusIndicator.Status.DISCONNECTED
-                );
-                this.addRenderableWidget(statusIndicator);
-            }
-            case ITEMS, FLUIDS, GAS -> {
-                // Add side configuration widget
-                SideConfigWidget.ResourceType resourceType = switch (currentTab) {
-                    case ITEMS -> SideConfigWidget.ResourceType.ITEMS;
-                    case FLUIDS -> SideConfigWidget.ResourceType.FLUIDS;
-                    case GAS -> SideConfigWidget.ResourceType.GAS;
-                    default -> SideConfigWidget.ResourceType.ITEMS;
-                };
-                
-                sideConfigWidget = new SideConfigWidget(
-                    x + 8, y + 18, 160, 46, // Compact height to fit in 84px content area
-                    be.getBlockPos(), be, resourceType
-                );
-                this.addRenderableWidget(sideConfigWidget);
-            }
-            case ENERGY -> {
-                // Add side configuration widget for Energy
-                sideConfigWidget = new SideConfigWidget(
-                    x + 8, y + 18, 160, 46, // Compact height to fit in 84px content area
-                    be.getBlockPos(), be, SideConfigWidget.ResourceType.ENERGY
-                );
-                this.addRenderableWidget(sideConfigWidget);
-            }
+    private void onFrequencyChanged(String newFrequency) {
+        if (!newFrequency.isEmpty()) {
+            NetworkHandler.CHANNEL.sendToServer(
+                new UpdateFrequencyPacket(menu.getBlockEntity().getBlockPos(), newFrequency)
+            );
         }
     }
     
@@ -153,223 +94,166 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, TEXTURE);
         
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        int guiLeft = (this.width - this.imageWidth) / 2;
+        int guiTop = (this.height - this.imageHeight) / 2;
         
-        // Draw main GUI background (standard Minecraft/Mekanism style)
-        // Full background in one call
-        this.blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight);
+        // Main background - single blit like Mekanism
+        this.blit(poseStack, guiLeft, guiTop, 0, 0, this.imageWidth, this.imageHeight);
         
-        // Draw tabs
-        renderTabs(poseStack, x, y);
+        // Side configuration buttons background
+        renderSideConfigArea(poseStack, guiLeft, guiTop);
     }
     
     /**
-     * Render tab buttons
+     * Render side configuration area (6 direction buttons + mode selector)
      */
-    private void renderTabs(PoseStack poseStack, int x, int y) {
-        for (Tab tab : Tab.values()) {
-            int tabX = x - TAB_WIDTH + 3;
-            int tabY = y + 4 + (tab.index * (TAB_HEIGHT + 2));
+    private void renderSideConfigArea(PoseStack poseStack, int guiLeft, int guiTop) {
+        int startX = guiLeft + SIDE_BUTTONS_START_X;
+        int startY = guiTop + SIDE_BUTTONS_START_Y;
+        
+        AdapterBlockEntity be = menu.getBlockEntity();
+        
+        // Draw 6 direction buttons in 2 rows
+        Direction[] directions = {
+            Direction.UP, Direction.DOWN, Direction.NORTH,
+            Direction.SOUTH, Direction.WEST, Direction.EAST
+        };
+        
+        for (int i = 0; i < directions.length; i++) {
+            int col = i % 3;
+            int row = i / 3;
+            int x = startX + col * (SIDE_BUTTON_SIZE + 2);
+            int y = startY + row * (SIDE_BUTTON_SIZE + 2);
             
-            boolean selected = tab == currentTab;
-            int texY = selected ? 166 : 198;
+            Direction dir = directions[i];
+            AdapterBlockEntity.SideConfig config = be.getSideConfig(dir);
             
-            // Draw tab background
-            this.blit(poseStack, tabX, tabY, 176, texY, TAB_WIDTH, TAB_HEIGHT);
+            // Button background
+            int texU = 176;
+            int texV = (selectedSide == dir) ? 0 : 18; // Selected vs normal
+            this.blit(poseStack, x, y, texU, texV, SIDE_BUTTON_SIZE, SIDE_BUTTON_SIZE);
             
-            // Draw tab icon (16x16 from texture atlas)
-            int iconTexX = 206 + (tab.index * 18);
-            int iconTexY = 166;
-            this.blit(poseStack, tabX + 6, tabY + 8, iconTexX, iconTexY, 16, 16);
+            // Direction icon
+            int iconU = 194 + (i * 16);
+            int iconV = 0;
+            this.blit(poseStack, x + 1, y + 1, iconU, iconV, 16, 16);
+            
+            // Mode indicator (small colored square)
+            if (config != null && config.enabled) {
+                int modeColor = getModeColor(config.mode);
+                fill(poseStack, x + 14, y + 14, x + 17, y + 17, modeColor);
+            }
         }
+    }
+    
+    /**
+     * Get color for transfer mode
+     */
+    private int getModeColor(AdapterBlockEntity.SideConfig.TransferMode mode) {
+        return switch (mode) {
+            case OUTPUT -> 0xFFFF5500; // Orange - extracting
+            case INPUT -> 0xFF0055FF;  // Blue - inserting
+            case BOTH -> 0xFFFFFF00;   // Yellow - bidirectional
+            case DISABLED -> 0xFF808080; // Gray
+        };
     }
     
     @Override
     protected void renderLabels(PoseStack poseStack, int mouseX, int mouseY) {
-        // Draw title
-        this.font.draw(poseStack, this.title, 8, 6, 0x404040);
+        // Title
+        this.font.draw(poseStack, this.title, (float)this.titleLabelX, (float)this.titleLabelY, 0x404040);
         
-        // Draw current tab content
-        switch (currentTab) {
-            case ITEMS -> renderItemsTab(poseStack);
-            case FLUIDS -> renderFluidsTab(poseStack);
-            case ENERGY -> renderEnergyTab(poseStack);
-            case GAS -> renderGasTab(poseStack);
-            case NETWORK -> renderNetworkTab(poseStack);
-        }
-    }
-    
-    /**
-     * Render Items tab content
-     */
-    private void renderItemsTab(PoseStack poseStack) {
-        this.font.draw(poseStack, Component.translatable("gui.bonepipe.items.title"), 
-            8, 20, 0x404040);
+        // Inventory label
+        this.font.draw(poseStack, this.playerInventoryTitle, 
+            (float)this.inventoryLabelX, (float)this.inventoryLabelY, 0x404040);
         
+        // Frequency label
+        this.font.draw(poseStack, "Frequency:", 30, 12, 0x404040);
+        
+        // Side configuration header
         AdapterBlockEntity be = menu.getBlockEntity();
-        
-        // Show transfer status
-        boolean enabled = be.isEnabled();
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
-            8, 35, enabled ? 0x00AA00 : 0xAA0000);
-        
-        // Show upgrade bonuses
-        if (be.getSpeedMultiplier() > 1.0) {
-            this.font.draw(poseStack, 
-                Component.literal("Speed: " + String.format("%.1fx", be.getSpeedMultiplier())), 
-                8, 50, 0x404040);
+        if (selectedSide != null) {
+            AdapterBlockEntity.SideConfig config = be.getSideConfig(selectedSide);
+            String modeName = config != null ? config.mode.name() : "DISABLED";
+            this.font.draw(poseStack, "Mode: " + modeName, 
+                SIDE_BUTTONS_START_X + 70, SIDE_BUTTONS_START_Y + 10, 0x404040);
         }
         
-        if (be.getStackBonus() > 0) {
-            this.font.draw(poseStack, 
-                Component.literal("Stack Bonus: +" + be.getStackBonus()), 
-                8, 60, 0x404040);
-        }
-        
-        if (be.hasFilterUpgrade()) {
-            int filterSlots = be.getTotalFilterSlots();
-            this.font.draw(poseStack, 
-                Component.literal("Filter Slots: " + filterSlots), 
-                8, 70, 0x00FFFF);
-        }
-    }
-    
-    /**
-     * Render Fluids tab content
-     */
-    private void renderFluidsTab(PoseStack poseStack) {
-        this.font.draw(poseStack, Component.translatable("gui.bonepipe.fluids.title"), 
-            8, 20, 0x404040);
-        
-        AdapterBlockEntity be = menu.getBlockEntity();
-        
-        // Show transfer status
-        boolean enabled = be.isEnabled();
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
-            8, 35, enabled ? 0x00AA00 : 0xAA0000);
-        
-        // Show transfer rate with upgrades
-        long baseRate = 1000; // mB per tick
-        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
-        this.font.draw(poseStack, 
-            Component.literal("Transfer Rate: " + actualRate + " mB/tick"), 
-            8, 50, 0x404040);
-        
-        if (be.hasFilterUpgrade()) {
-            this.font.draw(poseStack, 
-                Component.literal("Whitelist: Not configured"), 
-                8, 65, 0x808080);
-        }
-    }
-    
-    /**
-     * Render Energy tab content
-     */
-    private void renderEnergyTab(PoseStack poseStack) {
-        this.font.draw(poseStack, Component.translatable("gui.bonepipe.energy.title"), 
-            8, 20, 0x404040);
-        
-        AdapterBlockEntity be = menu.getBlockEntity();
-        
-        // Show transfer status
-        boolean enabled = be.isEnabled();
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
-            8, 35, enabled ? 0x00AA00 : 0xAA0000);
-        
-        // Show transfer rate with upgrades
-        long baseRate = 1000; // FE per tick
-        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
-        this.font.draw(poseStack, 
-            Component.literal("Transfer Rate: " + actualRate + " FE/tick"), 
-            8, 50, 0x404040);
-        
-        // Show statistics
-        this.font.draw(poseStack, 
-            Component.literal("Total Transferred: " + be.getTotalTransferred()), 
-            8, 65, 0x404040);
-    }
-    
-    /**
-     * Render Gas tab content (Mekanism integration)
-     */
-    private void renderGasTab(PoseStack poseStack) {
-        this.font.draw(poseStack, Component.translatable("gui.bonepipe.gas.title"), 
-            8, 20, 0x404040);
-        
-        AdapterBlockEntity be = menu.getBlockEntity();
-        
-        // Show transfer status
-        boolean enabled = be.isEnabled();
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
-            8, 35, enabled ? 0x00AA00 : 0xAA0000);
-        
-        // Show transfer rate with upgrades
-        long baseRate = 1000; // mB per tick
-        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
-        this.font.draw(poseStack, 
-            Component.literal("Transfer Rate: " + actualRate + " mB/tick"), 
-            8, 50, 0x404040);
-        
-        // Show Mekanism status
-        this.font.draw(poseStack, 
-            Component.literal("Mekanism: Installed"), 
-            8, 65, 0x00FFAA);
-        
-        if (be.hasFilterUpgrade()) {
-            this.font.draw(poseStack, 
-                Component.literal("Gas Filter: Not configured"), 
-                8, 80, 0x808080);
-        }
-    }
-    
-    /**
-     * Render Network tab content
-     */
-    private void renderNetworkTab(PoseStack poseStack) {
-        this.font.draw(poseStack, Component.translatable("gui.bonepipe.network.title"), 
-            8, 20, 0x404040);
-        
-        AdapterBlockEntity be = menu.getBlockEntity();
-        String frequency = be.getFrequency();
-        
-        // Show frequency
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.frequency").append(": " + frequency), 
-            8, 35, 0x404040);
-        
-        // Show access mode
-        String accessMode = be.getAccessMode().name();
-        this.font.draw(poseStack, 
-            Component.translatable("gui.bonepipe.access_mode").append(": " + accessMode), 
-            8, 50, 0x404040);
+        // Status info
+        String status = be.isEnabled() ? "§aActive" : "§cInactive";
+        this.font.draw(poseStack, status, 140, 12, 0xFFFFFF);
     }
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Check tab clicks
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        int guiLeft = (this.width - this.imageWidth) / 2;
+        int guiTop = (this.height - this.imageHeight) / 2;
         
-        for (Tab tab : Tab.values()) {
-            int tabX = x - TAB_WIDTH + 3;
-            int tabY = y + 4 + (tab.index * (TAB_HEIGHT + 2));
+        // Check side button clicks
+        int startX = guiLeft + SIDE_BUTTONS_START_X;
+        int startY = guiTop + SIDE_BUTTONS_START_Y;
+        
+        Direction[] directions = {
+            Direction.UP, Direction.DOWN, Direction.NORTH,
+            Direction.SOUTH, Direction.WEST, Direction.EAST
+        };
+        
+        for (int i = 0; i < directions.length; i++) {
+            int col = i % 3;
+            int row = i / 3;
+            int x = startX + col * (SIDE_BUTTON_SIZE + 2);
+            int y = startY + row * (SIDE_BUTTON_SIZE + 2);
             
-            if (mouseX >= tabX && mouseX < tabX + TAB_WIDTH &&
-                mouseY >= tabY && mouseY < tabY + TAB_HEIGHT) {
-                if (currentTab != tab) {
-                    currentTab = tab;
-                    // Reinitialize widgets for new tab
-                    initializeWidgets(x, y);
+            if (mouseX >= x && mouseX < x + SIDE_BUTTON_SIZE &&
+                mouseY >= y && mouseY < y + SIDE_BUTTON_SIZE) {
+                
+                Direction clickedDir = directions[i];
+                
+                if (button == 0) { // Left click - select side
+                    selectedSide = clickedDir;
+                    return true;
+                } else if (button == 1) { // Right click - cycle mode
+                    cycleSideMode(clickedDir);
+                    return true;
                 }
-                return true;
             }
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    /**
+     * Cycle through transfer modes for a side
+     */
+    private void cycleSideMode(Direction direction) {
+        AdapterBlockEntity be = menu.getBlockEntity();
+        AdapterBlockEntity.SideConfig config = be.getSideConfig(direction);
+        
+        if (config == null) {
+            config = new AdapterBlockEntity.SideConfig();
+        }
+        
+        // Cycle: DISABLED -> OUTPUT -> INPUT -> BOTH -> DISABLED
+        config.mode = switch (config.mode) {
+            case DISABLED -> AdapterBlockEntity.SideConfig.TransferMode.OUTPUT;
+            case OUTPUT -> AdapterBlockEntity.SideConfig.TransferMode.INPUT;
+            case INPUT -> AdapterBlockEntity.SideConfig.TransferMode.BOTH;
+            case BOTH -> AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
+        };
+        config.enabled = config.mode != AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
+        
+        // Send to server
+        NetworkHandler.CHANNEL.sendToServer(
+            new com.bonepipe.network.packets.UpdateSideConfigPacket(
+                be.getBlockPos(), direction, config.enabled, config.mode
+            )
+        );
+    }
+    
+    @Override
+    public void resize(net.minecraft.client.Minecraft minecraft, int width, int height) {
+        String freq = frequencyField.getValue();
+        super.resize(minecraft, width, height);
+        frequencyField.setValue(freq);
     }
 }
