@@ -8,14 +8,14 @@
 ![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-Полнофункциональная беспроводная система переноса ресурсов для Minecraft 1.19.2 Forge с интеграцией Mekanism, системой апгрейдов, продвинутой фильтрацией и центральным управлением сетью!
+Полнофункциональная беспроводная система переноса ресурсов для Minecraft 1.19.2 Forge с поддержкой Mekanism Gas, системой апгрейдов, продвинутой фильтрацией и центральным управлением сетью!
 
 ## 🎯 Что такое BonePipe?
 
 **BonePipe** - это революционный подход к переносу ресурсов в Minecraft:
 
 - 🔌 **Wireless Transfer**: Никаких кабелей - только частоты и адаптеры
-- 🧪 **Universal Support**: Items, Fluids, Energy + Mekanism chemicals (Gas, Infusion, Pigment, Slurry)
+- 🧪 **Universal Support**: Items, Fluids, Energy + Mekanism Gas transfer
 - ⚡ **Ultra Fast**: До **x16 скорости** с апгрейдами! (204k FE/op, 64k mB/op)
 - 🎴 **5 Upgrade Types**: Speed, Stack, Filter, Capacity, Range
 - 🔍 **Advanced Filtering**: До **37 filter slots** (AE2-style Capacity Cards!)
@@ -32,7 +32,7 @@
 - ✅ Items transfer (64-96 items per operation!)
 - ✅ Fluids transfer (4k-64k mB per operation!)
 - ✅ Energy transfer (12.8k-204k FE per operation!)
-- ✅ Mekanism chemicals (Gas, Infusion, Pigment, Slurry)
+- ✅ Mekanism Gas transfer (если Mekanism установлен)
 - ✅ Per-side configuration (6 сторон отдельно)
 - ✅ 4 upgrade slots (стакаются эффекты!)
 - ✅ Chunk loading support
@@ -136,10 +136,10 @@
 - ✅ Network statistics для контроллера
 
 ### 🧪 Mekanism
-- ✅ **Gas** (Hydrogen, Oxygen, Chlorine, etc.)
-- ✅ **Infusion** (Carbon, Diamond, Redstone, etc.)
-- ✅ **Pigment** (все цвета)
-- ✅ **Slurry** (грязные/чистые руды)
+- ✅ **Gas Transfer** (Hydrogen, Oxygen, Chlorine, etc.)
+- ⚠️ **Auto-detected**: Работает только если Mekanism установлен
+- ❌ **Infusion/Pigment/Slurry**: Не поддерживаются (только Gas)
+- 📖 См. [MEKANISM_SUPPORT.md](MEKANISM_SUPPORT.md) для деталей
 
 ## 📊 Сравнение с конкурентами
 
@@ -149,7 +149,7 @@
 | **Items** | ✅ | ✅ | ✅ | ❌ |
 | **Fluids** | ✅ | ✅ | ✅ | ❌ |
 | **Energy** | ✅ | ✅ | ✅ | ✅ |
-| **Chemicals** | ✅ | ❌ | ✅ | ❌ |
+| **Chemicals** | ✅ (Gas) | ❌ | ✅ (All) | ❌ |
 | **Speed Upgrades** | ✅ (x16) | ✅ (x4) | ❌ | ❌ |
 | **Filter Slots** | ✅ (37) | ✅ (9) | ❌ | ❌ |
 | **Controller** | ✅ | ❌ | ❌ | ✅ |
@@ -169,7 +169,10 @@
 ## 🎓 FAQ
 
 **Q: Нужен ли Mekanism?**  
-A: Нет! Опционален. Без него работают Items/Fluids/Energy.
+A: Нет! Опционален. Gas transfer включается автоматически если Mekanism установлен. Без него работают Items/Fluids/Energy.
+
+**Q: Какие химические типы Mekanism поддерживаются?**  
+A: Только **Gas** (Hydrogen, Oxygen, Chlorine и т.д.). Infusion/Pigment/Slurry не поддерживаются для упрощения.
 
 **Q: Как увеличить скорость?**  
 A: Добавьте Speed Upgrade Cards. 4 карты = x16!

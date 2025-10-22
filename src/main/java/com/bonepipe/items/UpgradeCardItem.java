@@ -23,12 +23,12 @@ public class UpgradeCardItem extends Item {
         STACK("Stack Size", "Increases stack size by +8", 1.0, 0, 8, 0),
         CAPACITY("Filter Capacity", "Adds +9 filter slots", 1.0, 0, 0, 9);
         
-        final String name;
-        final String description;
-        final double speedMultiplier;
-        final double rangeMultiplier;
-        final int stackBonus;
-        final int filterSlots; // New: number of filter slots this card provides
+        public final String name;
+        public final String description;
+        public final double speedMultiplier;
+        public final double rangeMultiplier;
+        public final int stackBonus;
+        public final int filterSlots; // New: number of filter slots this card provides
         
         UpgradeType(String name, String description, double speedMultiplier, 
                    double rangeMultiplier, int stackBonus, int filterSlots) {

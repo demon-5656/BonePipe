@@ -3,6 +3,7 @@ package com.bonepipe.transfer;
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.network.NetworkNode;
+import com.bonepipe.util.MachineDetector;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -12,17 +13,6 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 /**
  * Transfer handler for fluids using Forge's IFluidHandler capability
  */
-package com.bonepipe.transfer;
-
-import com.bonepipe.BonePipe;
-import com.bonepipe.blocks.AdapterBlockEntity;
-import com.bonepipe.network.NetworkNode;
-import com.bonepipe.util.MachineDetector;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 
 public class FluidTransferHandler implements ITransferHandler {
     
@@ -175,15 +165,15 @@ public class FluidTransferHandler implements ITransferHandler {
     /**
      * Get connected machine's BlockEntity
      */
-    private BlockEntity getMachineConnection(NetworkNode node) {
-        return MachineDetector.findConnectedMachine(node.getLevel(), node.getPos());
+    private BlockEntity getMachineConnection(AdapterBlockEntity adapter) {
+        return MachineDetector.findConnectedMachine(adapter.getLevel(), adapter.getBlockPos());
     }
 
     /**
      * Get side to access machine
      */
-    private Direction getSideToMachine(NetworkNode node) {
-        return MachineDetector.findMachineDirection(node.getLevel(), node.getPos());
+    private Direction getSideToMachine(AdapterBlockEntity adapter) {
+        return MachineDetector.findMachineDirection(adapter.getLevel(), adapter.getBlockPos());
     }    /**
      * Get fluid handler capability from a BlockEntity
      */

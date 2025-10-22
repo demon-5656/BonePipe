@@ -1,0 +1,73 @@
+{
+  "block.bonepipe.adapter": "Беспроводной адаптер",
+  
+  "item.bonepipe.adapter": "Беспроводной адаптер",
+  "item.bonepipe.speed_upgrade": "Улучшение скорости",
+  "item.bonepipe.filter_upgrade": "Улучшение фильтрации",
+  "item.bonepipe.range_upgrade": "Улучшение дальности",
+  "item.bonepipe.stack_upgrade": "Улучшение размера стека",
+  
+  "container.bonepipe.adapter": "Беспроводной адаптер",
+  
+  "itemGroup.bonepipe": "BonePipe",
+  
+  "gui.bonepipe.frequency": "Частота",
+  "gui.bonepipe.access_mode": "Режим доступа",
+  "gui.bonepipe.access_mode.public": "Публичный",
+  "gui.bonepipe.access_mode.private": "Приватный",
+  "gui.bonepipe.access_mode.trusted": "Доверенный",
+  "gui.bonepipe.enable": "Включить",
+  "gui.bonepipe.disable": "Отключить",
+  "gui.bonepipe.status": "Статус",
+  
+  "gui.bonepipe.tab.items": "Предметы",
+  "gui.bonepipe.tab.fluids": "Жидкости",
+  "gui.bonepipe.tab.energy": "Энергия",
+  "gui.bonepipe.tab.network": "Сеть",
+  
+  "gui.bonepipe.items.title": "Передача предметов",
+  "gui.bonepipe.fluids.title": "Передача жидкостей",
+  "gui.bonepipe.energy.title": "Передача энергии",
+  "gui.bonepipe.network.title": "Настройка сети",
+  
+  "gui.bonepipe.channel.items": "Предметы",
+  "gui.bonepipe.channel.fluids": "Жидкости",
+  "gui.bonepipe.channel.energy": "Энергия",
+  "gui.bonepipe.channel.mek_gas": "Газ",
+  "gui.bonepipe.channel.mek_infuse": "Инфузия",
+  "gui.bonepipe.channel.mek_pigment": "Пигмент",
+  "gui.bonepipe.channel.mek_slurry": "Суспензия",
+  "gui.bonepipe.channel.redstone": "Редстоун",
+  
+  "gui.bonepipe.mode.disabled": "Отключено",
+  "gui.bonepipe.mode.input": "Вход",
+  "gui.bonepipe.mode.output": "Выход",
+  "gui.bonepipe.mode.both": "Оба",
+  
+  "gui.bonepipe.network": "Сеть",
+  "gui.bonepipe.nodes": "Узлы",
+  "gui.bonepipe.statistics": "Статистика",
+  
+  "gui.bonepipe.status.connected": "Подключено",
+  "gui.bonepipe.status.disconnected": "Отключено",
+  "gui.bonepipe.status.active": "Активно",
+  "gui.bonepipe.status.error": "Ошибка",
+  
+  "tooltip.bonepipe.adapter": "Беспроводной перенос ресурсов§7Разместите рядом с машиной",
+  "tooltip.bonepipe.frequency": "Сеть: %s",
+  "tooltip.bonepipe.owner": "Владелец: %s",
+  "tooltip.bonepipe.nodes": "Узлов: %d",
+  
+  "tooltip.bonepipe.upgrade.speed": "Увеличивает скорость передачи",
+  "tooltip.bonepipe.upgrade.filter": "Добавляет фильтрацию предметов/жидкостей",
+  "tooltip.bonepipe.upgrade.range": "Увеличивает дальность беспроводной связи",
+  "tooltip.bonepipe.upgrade.stack": "Увеличивает размер стека за передачу",
+  
+  "tooltip.bonepipe.chunkloading": "Поддерживает чанк загруженным",
+  "tooltip.bonepipe.chunkloading.active": "§aЗагрузка чанка активна",
+  "tooltip.bonepipe.chunkloading.inactive": "§7Загрузка чанка неактивна",
+  
+  "bonepipe.subtitle.transfer": "Беспроводная передача",
+  "bonepipe.subtitle.connect": "Подключение к сети",
+  "bonepipe.subtitle.disconnect": "Отключение от сети"
+}

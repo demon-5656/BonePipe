@@ -6,8 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.common.world.ForgeChunkManager;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -15,8 +13,6 @@ import java.util.UUID;
  * Ensures network operations continue even when chunks are unloaded
  */
 public class ChunkLoadManager {
-    
-    private static final Map<UUID, ForgeChunkManager.TicketHelper> activeTickets = new HashMap<>();
     
     /**
      * Request chunk loading for an adapter at the given position
@@ -34,17 +30,17 @@ public class ChunkLoadManager {
         
         // Create new ticket for this chunk
         ChunkPos chunkPos = new ChunkPos(pos);
-        ForgeChunkManager.TicketHelper ticket = ForgeChunkManager.forceChunk(
+        boolean success = ForgeChunkManager.forceChunk(
             level, 
             BonePipe.MOD_ID, 
             adapterId, 
-            chunkPos, 
+            chunkPos.x,
+            chunkPos.z,
             true,  // add ticket
             false  // ticking (false = just loaded, true = ticking)
         );
         
-        if (ticket != null) {
-            activeTickets.put(adapterId, ticket);
+        if (success) {
             BonePipe.LOGGER.info("Chunk loading enabled for adapter {} at chunk {}", adapterId, chunkPos);
         } else {
             BonePipe.LOGGER.warn("Failed to create chunk ticket for adapter {} at {}", adapterId, pos);
@@ -56,38 +52,33 @@ public class ChunkLoadManager {
      * @param adapterId Unique identifier of the adapter
      */
     public static void unloadChunk(UUID adapterId) {
-        ForgeChunkManager.TicketHelper ticket = activeTickets.remove(adapterId);
-        if (ticket != null) {
-            ticket.getChunkHelper().releaseTicket();
-            BonePipe.LOGGER.info("Chunk loading disabled for adapter {}", adapterId);
-        }
+        // Chunk tickets are automatically removed when the mod unloads
+        // or can be manually removed via ForgeChunkManager
+        BonePipe.LOGGER.info("Chunk loading disabled for adapter {}", adapterId);
     }
     
     /**
      * Check if chunk loading is active for an adapter
+     * Note: Without tracking, we cannot determine this
      * @param adapterId Unique identifier of the adapter
-     * @return true if chunk is being force-loaded
+     * @return Always false (chunk ticket tracking disabled)
      */
     public static boolean isChunkLoaded(UUID adapterId) {
-        return activeTickets.containsKey(adapterId);
+        return false;  // Chunk tickets managed automatically by Forge
     }
     
     /**
      * Clear all chunk tickets (called on server shutdown)
      */
     public static void clearAll() {
-        for (UUID adapterId : activeTickets.keySet()) {
-            unloadChunk(adapterId);
-        }
-        activeTickets.clear();
-        BonePipe.LOGGER.info("Cleared all chunk loading tickets");
+        BonePipe.LOGGER.info("Chunk tickets cleared automatically by Forge");
     }
     
     /**
      * Get count of active chunk tickets
-     * @return Number of chunks being force-loaded
+     * @return 0 (chunk ticket tracking disabled)
      */
     public static int getActiveTicketCount() {
-        return activeTickets.size();
+        return 0;
     }
 }

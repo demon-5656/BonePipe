@@ -26,6 +26,6 @@ public class Sounds {
     
     private static RegistryObject<SoundEvent> register(String name) {
         ResourceLocation id = new ResourceLocation(BonePipe.MODID, name);
-        return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(id));
+        return SOUNDS.register(name, () -> new SoundEvent(id));
     }
 }

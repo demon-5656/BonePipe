@@ -58,10 +58,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven {
-        name = "Mekanism"
-        url = "https://modmaven.dev/"
-    }
-    maven {
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
@@ -69,24 +65,28 @@ repositories {
         name = "ModMaven"
         url = "https://modmaven.dev/"
     }
+    maven {
+        name = "CurseForge"
+        url = "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    
-    // Mekanism (compileOnly для soft dependency)
-    compileOnly fg.deobf("mekanism:Mekanism:${mekanism_version}")
     
     // JEI (compileOnly + runtimeOnly)
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
     runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
     
-    // The One Probe (compileOnly для soft dependency)
-    compileOnly fg.deobf("mcjty.theoneprobe:theoneprobe:${top_version}")
+    // Mekanism - local JAR for Gas support compilation
+    compileOnly fg.deobf(files('libs/Mekanism-1.19.2-10.3.9.13.jar'))
     
-    // Uncomment for runtime testing with Mekanism
-    // runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}")
+    // The One Probe (опционально, через CurseForge)  
+    // compileOnly fg.deobf("curse.maven:the-one-probe-245211:4460375")
 }
 
 tasks.named('processResources', ProcessResources).configure {

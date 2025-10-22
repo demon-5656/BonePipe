@@ -665,35 +665,6 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     /**
-     * Record a successful transfer (for statistics)
-     */
-    public void recordTransfer(long amount) {
-        if (level != null) {
-            this.lastTransferTick = level.getGameTime();
-            this.totalTransferred += amount;
-            
-            // Update ACTIVE blockstate
-            BlockState state = getBlockState();
-            if (state.hasProperty(AdapterBlock.ACTIVE) && !state.getValue(AdapterBlock.ACTIVE)) {
-                level.setBlock(worldPosition, state.setValue(AdapterBlock.ACTIVE, true), 3);
-            }
-            
-            // Play transfer sound (occasional, not every tick)
-            if (!level.isClientSide() && level.random.nextInt(20) == 0) {
-                level.playSound(null, worldPosition, 
-                    com.bonepipe.core.Sounds.TRANSFER.get(), 
-                    net.minecraft.sounds.SoundSource.BLOCKS, 
-                    0.3f, 0.9f + level.random.nextFloat() * 0.2f);
-            }
-            
-            // Spawn particles (client-side)
-            if (level.isClientSide() && level.random.nextInt(10) == 0) {
-                spawnTransferParticles();
-            }
-        }
-    }
-    
-    /**
      * Spawn visual particles when transfer occurs
      */
     private void spawnTransferParticles() {
@@ -725,8 +696,8 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public static class SideConfig {
-        private boolean enabled = false;
-        private TransferMode mode = TransferMode.DISABLED;
+        public boolean enabled = false;
+        public TransferMode mode = TransferMode.DISABLED;
         
         // Item filtering
         private java.util.List<net.minecraft.world.item.ItemStack> itemWhitelist = new java.util.ArrayList<>();

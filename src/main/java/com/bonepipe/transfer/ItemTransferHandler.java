@@ -178,15 +178,15 @@ public class ItemTransferHandler implements ITransferHandler {
     /**
      * Get connected machine's BlockEntity
      */
-    private BlockEntity getMachineConnection(NetworkNode node) {
-        return MachineDetector.findConnectedMachine(node.getLevel(), node.getPos());
+    private BlockEntity getMachineConnection(AdapterBlockEntity adapter) {
+        return MachineDetector.findConnectedMachine(adapter.getLevel(), adapter.getBlockPos());
     }
 
     /**
      * Get side to access machine
      */
-    private Direction getSideToMachine(NetworkNode node) {
-        return MachineDetector.findMachineDirection(node.getLevel(), node.getPos());
+    private Direction getSideToMachine(AdapterBlockEntity adapter) {
+        return MachineDetector.findMachineDirection(adapter.getLevel(), adapter.getBlockPos());
     }    /**
      * Get item handler capability from a BlockEntity
      */

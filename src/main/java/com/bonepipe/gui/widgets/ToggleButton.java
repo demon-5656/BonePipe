@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
+import javax.annotation.Nonnull;
 import java.util.function.Consumer;
 
 /**
@@ -16,7 +17,7 @@ public class ToggleButton extends Button {
     
     public ToggleButton(int x, int y, int width, int height, Component message, 
                        boolean initialState, Consumer<Boolean> onToggle) {
-        super(x, y, width, height, message, btn -> {}, DEFAULT_NARRATION);
+        super(x, y, width, height, message, btn -> {});
         this.toggled = initialState;
         this.onToggle = onToggle;
         updateMessage();
@@ -48,7 +49,7 @@ public class ToggleButton extends Button {
     }
     
     @Override
-    public void renderButton(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+    public void renderButton(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         // Custom rendering for toggle state
         int color = toggled ? 0x00FF00 : 0xFF0000;
         

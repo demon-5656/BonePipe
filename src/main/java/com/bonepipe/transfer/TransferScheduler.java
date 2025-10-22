@@ -43,16 +43,13 @@ public class TransferScheduler {
         registerHandler(new FluidTransferHandler());
         registerHandler(new EnergyTransferHandler());
         
-        // Register Mekanism handlers (if Mekanism is loaded)
+        // Register Mekanism Gas handler (if Mekanism is loaded at runtime)
         if (isMekanismLoaded()) {
             try {
-                registerHandler(new com.bonepipe.transfer.mekanism.GasTransferHandler());
-                registerHandler(new com.bonepipe.transfer.mekanism.InfusionTransferHandler());
-                registerHandler(new com.bonepipe.transfer.mekanism.PigmentTransferHandler());
-                registerHandler(new com.bonepipe.transfer.mekanism.SlurryTransferHandler());
-                BonePipe.LOGGER.info("Mekanism chemical handlers registered successfully");
+                registerHandler(new GasTransferHandler());
+                BonePipe.LOGGER.info("Mekanism Gas handler registered successfully");
             } catch (Exception e) {
-                BonePipe.LOGGER.error("Failed to register Mekanism handlers: {}", e.getMessage());
+                BonePipe.LOGGER.error("Failed to register Mekanism Gas handler: {}", e.getMessage());
             }
         }
         
@@ -60,7 +57,7 @@ public class TransferScheduler {
     }
     
     /**
-     * Check if Mekanism mod is loaded
+     * Check if Mekanism mod is loaded at runtime
      */
     private boolean isMekanismLoaded() {
         try {
