@@ -50,11 +50,11 @@ public class Registration {
     
     public static final RegistryObject<Item> ADAPTER_ITEM = ITEMS.register("adapter",
         () -> new BlockItem(ADAPTER_BLOCK.get(), 
-            new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
+            new Item.Properties().tab(ModCreativeTab.BONEPIPE_TAB)));
     
     public static final RegistryObject<Item> CONTROLLER_ITEM = ITEMS.register("controller",
         () -> new BlockItem(CONTROLLER_BLOCK.get(), 
-            new Item.Properties().tab(CreativeModeTab.TAB_REDSTONE)));
+            new Item.Properties().tab(ModCreativeTab.BONEPIPE_TAB)));
     
     // Upgrade cards
     public static final RegistryObject<Item> SPEED_UPGRADE = ITEMS.register("speed_upgrade",

@@ -1,6 +1,7 @@
 package com.bonepipe.items;
 
 import com.bonepipe.BonePipe;
+import com.bonepipe.core.ModCreativeTab;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -45,7 +46,7 @@ public class UpgradeCardItem extends Item {
     
     public UpgradeCardItem(UpgradeType upgradeType) {
         super(new Properties()
-            .tab(net.minecraft.world.item.CreativeModeTab.TAB_REDSTONE)
+            .tab(ModCreativeTab.BONEPIPE_TAB)
             .stacksTo(16));
         this.upgradeType = upgradeType;
     }
