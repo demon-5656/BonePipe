@@ -29,25 +29,25 @@ public class AdapterMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
-        // Add upgrade slots (4 slots in a row at the bottom)
-        // Position: x=44, y=142 (bottom area of GUI)
+        // Add upgrade slots (4 slots in a row at the top)
+        // Position: x=44, y=100 (below side config widget)
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 142));
+            this.addSlot(new SlotItemHandler(blockEntity.getUpgradeInventory(), i, 44 + i * 22, 100));
         }
         
         // Add player inventory (standard 3x9 grid)
-        // Position: x=8, y=84
+        // Position: x=8, y=140 (moved down to accommodate content area)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 
-                    8 + col * 18, 84 + row * 18));
+                    8 + col * 18, 140 + row * 18));
             }
         }
         
         // Add player hotbar (bottom row)
-        // Position: x=8, y=142
+        // Position: x=8, y=198
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 198));
         }
     }
     

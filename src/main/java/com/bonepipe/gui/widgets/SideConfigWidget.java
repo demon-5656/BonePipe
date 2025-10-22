@@ -24,10 +24,10 @@ public class SideConfigWidget extends AbstractWidget {
     private final ResourceType resourceType;
     
     // Layout constants
-    private static final int SIDE_SIZE = 20;
-    private static final int MODE_BUTTON_WIDTH = 60;
-    private static final int MODE_BUTTON_HEIGHT = 16;
-    private static final int SPACING = 4;
+    private static final int SIDE_SIZE = 24; // Increased from 20 for easier clicking
+    private static final int MODE_BUTTON_WIDTH = 70; // Increased from 60
+    private static final int MODE_BUTTON_HEIGHT = 18; // Increased from 16
+    private static final int SPACING = 5; // Increased spacing
     
     private Direction selectedSide = Direction.NORTH;
     

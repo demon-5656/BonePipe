@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 public class FrequencyTextField extends EditBox {
     
     private final Consumer<String> onChanged;
+    private boolean suppressCallback = false;
     
     public FrequencyTextField(Font font, int x, int y, int width, int height, 
                              Component message, Consumer<String> onChanged) {
@@ -25,16 +26,26 @@ public class FrequencyTextField extends EditBox {
     @Override
     public void insertText(String text) {
         super.insertText(text);
-        if (onChanged != null) {
+        if (onChanged != null && !suppressCallback) {
             onChanged.accept(getValue());
         }
     }
     
     @Override
     public void setValue(String text) {
+        suppressCallback = true;
         super.setValue(text);
-        if (onChanged != null) {
-            onChanged.accept(text);
+        suppressCallback = false;
+    }
+    
+    @Override
+    public void setFocused(boolean focused) {
+        boolean wasFocused = isFocused();
+        super.setFocused(focused);
+        
+        // Save when losing focus
+        if (wasFocused && !focused && onChanged != null) {
+            onChanged.accept(getValue());
         }
     }
     

@@ -56,7 +56,8 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     public AdapterScreen(AdapterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 166;
+        this.imageHeight = 222; // Increased to accommodate inventory + side config widget
+        this.inventoryLabelY = this.imageHeight - 94; // Position inventory label correctly
     }
     
     @Override
@@ -122,7 +123,7 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
                 };
                 
                 sideConfigWidget = new SideConfigWidget(
-                    x + 8, y + 40, 160, 110,
+                    x + 8, y + 20, 160, 100,
                     be.getBlockPos(), be, resourceType
                 );
                 this.addRenderableWidget(sideConfigWidget);
@@ -130,7 +131,7 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             case ENERGY -> {
                 // Add side configuration widget for Energy
                 sideConfigWidget = new SideConfigWidget(
-                    x + 8, y + 40, 160, 110,
+                    x + 8, y + 20, 160, 100,
                     be.getBlockPos(), be, SideConfigWidget.ResourceType.ENERGY
                 );
                 this.addRenderableWidget(sideConfigWidget);
@@ -154,8 +155,31 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         
-        // Draw main background
-        this.blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight);
+        // Draw main background (top section - content area)
+        int contentHeight = 128; // Height of content area before inventory
+        this.blit(poseStack, x, y, 0, 0, this.imageWidth, contentHeight);
+        
+        // Draw player inventory background (bottom section)
+        int inventoryY = y + contentHeight;
+        // Use standard inventory texture area (assuming it's in the texture at y=166-222)
+        // If not available, draw solid background
+        fill(poseStack, x, inventoryY, x + this.imageWidth, inventoryY + 94, 0xFFC6C6C6);
+        
+        // Draw inventory grid background
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotX = x + 8 + col * 18;
+                int slotY = inventoryY + 18 + row * 18;
+                fill(poseStack, slotX, slotY, slotX + 16, slotY + 16, 0xFF8B8B8B);
+            }
+        }
+        
+        // Draw hotbar background
+        for (int i = 0; i < 9; i++) {
+            int slotX = x + 8 + i * 18;
+            int slotY = inventoryY + 76;
+            fill(poseStack, slotX, slotY, slotX + 16, slotY + 16, 0xFF8B8B8B);
+        }
         
         // Draw tabs
         renderTabs(poseStack, x, y);
