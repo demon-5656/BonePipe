@@ -24,10 +24,10 @@ public class SideConfigWidget extends AbstractWidget {
     private final ResourceType resourceType;
     
     // Layout constants
-    private static final int SIDE_SIZE = 24; // Increased from 20 for easier clicking
-    private static final int MODE_BUTTON_WIDTH = 70; // Increased from 60
-    private static final int MODE_BUTTON_HEIGHT = 18; // Increased from 16
-    private static final int SPACING = 5; // Increased spacing
+    private static final int SIDE_SIZE = 18; // Compact size for smaller widget
+    private static final int MODE_BUTTON_WIDTH = 65;
+    private static final int MODE_BUTTON_HEIGHT = 14;
+    private static final int SPACING = 3;
     
     private Direction selectedSide = Direction.NORTH;
     
@@ -64,9 +64,9 @@ public class SideConfigWidget extends AbstractWidget {
         // Draw background
         fill(poseStack, x, y, x + width, y + height, 0xFF2B2B2B);
         
-        // Draw title
-        drawString(poseStack, Minecraft.getInstance().font, "Side Configuration - " + resourceType.getDisplayName(), 
-            x + 4, y + 4, 0xFFFFFF);
+        // Draw compact title
+        drawString(poseStack, Minecraft.getInstance().font, resourceType.getDisplayName() + " Config", 
+            x + 4, y + 2, 0xFFFFFF);
         
         // Draw 6-sided view (simplified 2D representation)
         renderSideButtons(poseStack, mouseX, mouseY);
@@ -76,8 +76,8 @@ public class SideConfigWidget extends AbstractWidget {
     }
     
     private void renderSideButtons(PoseStack poseStack, int mouseX, int mouseY) {
-        int startX = x + 10;
-        int startY = y + 25;
+        int startX = x + 6;
+        int startY = y + 14;
         
         // Layout:
         //       [UP]
@@ -126,8 +126,8 @@ public class SideConfigWidget extends AbstractWidget {
     }
     
     private void renderModeButtons(PoseStack poseStack, int mouseX, int mouseY) {
-        int startX = x + 110;
-        int startY = y + 30;
+        int startX = x + 85;
+        int startY = y + 14;
         
         drawString(poseStack, Minecraft.getInstance().font, "Side: " + selectedSide.getName(), 
             startX, startY, 0xFFFFFF);
@@ -139,7 +139,7 @@ public class SideConfigWidget extends AbstractWidget {
         
         for (int i = 0; i < modes.length; i++) {
             AdapterBlockEntity.SideConfig.TransferMode mode = modes[i];
-            int by = startY + 20 + i * (MODE_BUTTON_HEIGHT + SPACING);
+            int by = startY + 12 + i * (MODE_BUTTON_HEIGHT + SPACING);
             
             boolean hovered = mouseX >= startX && mouseX < startX + MODE_BUTTON_WIDTH &&
                              mouseY >= by && mouseY < by + MODE_BUTTON_HEIGHT;
@@ -153,9 +153,9 @@ public class SideConfigWidget extends AbstractWidget {
             // Draw button
             fill(poseStack, startX, by, startX + MODE_BUTTON_WIDTH, by + MODE_BUTTON_HEIGHT, color);
             
-            // Draw label
+            // Draw label (smaller font)
             drawCenteredString(poseStack, Minecraft.getInstance().font, mode.name(), 
-                startX + MODE_BUTTON_WIDTH / 2, by + 4, 0xFFFFFF);
+                startX + MODE_BUTTON_WIDTH / 2, by + 3, 0xFFFFFF);
         }
     }
     
@@ -185,8 +185,8 @@ public class SideConfigWidget extends AbstractWidget {
         if (!isHovered) return false;
         
         // Check side button clicks
-        int startX = x + 10;
-        int startY = y + 25;
+        int startX = x + 6;
+        int startY = y + 14;
         
         Direction[] layout = {
             null, Direction.UP, null,
@@ -213,8 +213,8 @@ public class SideConfigWidget extends AbstractWidget {
         }
         
         // Check mode button clicks
-        int modeStartX = x + 110;
-        int modeStartY = y + 50;
+        int modeStartX = x + 85;
+        int modeStartY = y + 26;
         
         AdapterBlockEntity.SideConfig.TransferMode[] modes = AdapterBlockEntity.SideConfig.TransferMode.values();
         
