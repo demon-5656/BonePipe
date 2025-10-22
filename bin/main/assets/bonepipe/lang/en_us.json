@@ -27,11 +27,13 @@
   "gui.bonepipe.tab.items": "Items",
   "gui.bonepipe.tab.fluids": "Fluids",
   "gui.bonepipe.tab.energy": "Energy",
+  "gui.bonepipe.tab.gas": "Gas",
   "gui.bonepipe.tab.network": "Network",
   
   "gui.bonepipe.items.title": "Item Transfer",
   "gui.bonepipe.fluids.title": "Fluid Transfer",
   "gui.bonepipe.energy.title": "Energy Transfer",
+  "gui.bonepipe.gas.title": "Gas Transfer",
   "gui.bonepipe.network.title": "Network Configuration",
   
   "gui.bonepipe.channel.items": "Items",

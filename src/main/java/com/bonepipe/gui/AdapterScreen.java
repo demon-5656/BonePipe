@@ -3,6 +3,7 @@ package com.bonepipe.gui;
 import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.gui.widgets.FrequencyTextField;
+import com.bonepipe.gui.widgets.SideConfigWidget;
 import com.bonepipe.gui.widgets.StatusIndicator;
 import com.bonepipe.gui.widgets.ToggleButton;
 import com.bonepipe.network.packets.NetworkHandler;
@@ -32,7 +33,8 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         ITEMS(0, Component.translatable("gui.bonepipe.tab.items")),
         FLUIDS(1, Component.translatable("gui.bonepipe.tab.fluids")),
         ENERGY(2, Component.translatable("gui.bonepipe.tab.energy")),
-        NETWORK(3, Component.translatable("gui.bonepipe.tab.network"));
+        GAS(3, Component.translatable("gui.bonepipe.tab.gas")),
+        NETWORK(4, Component.translatable("gui.bonepipe.tab.network"));
         
         final int index;
         final Component label;
@@ -49,6 +51,7 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     private FrequencyTextField frequencyField;
     private ToggleButton enableButton;
     private StatusIndicator statusIndicator;
+    private SideConfigWidget sideConfigWidget;
     
     public AdapterScreen(AdapterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -109,31 +112,28 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
                 );
                 this.addRenderableWidget(statusIndicator);
             }
-            case ITEMS, FLUIDS -> {
-                // Enable/Disable toggle
-                enableButton = new ToggleButton(
-                    x + 100, y + 30, 60, 20,
-                    Component.translatable("gui.bonepipe.enable"),
-                    be.isEnabled(),
-                    enabled -> {
-                        // Send enable/disable packet for current machine direction
-                        if (be.getMachineDirection() != null) {
-                            var mode = enabled ? 
-                                AdapterBlockEntity.SideConfig.TransferMode.BOTH : 
-                                AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
-                            
-                            NetworkHandler.CHANNEL.sendToServer(
-                                new UpdateSideConfigPacket(
-                                    be.getBlockPos(), 
-                                    be.getMachineDirection(), 
-                                    enabled, 
-                                    mode
-                                )
-                            );
-                        }
-                    }
+            case ITEMS, FLUIDS, GAS -> {
+                // Add side configuration widget
+                SideConfigWidget.ResourceType resourceType = switch (currentTab) {
+                    case ITEMS -> SideConfigWidget.ResourceType.ITEMS;
+                    case FLUIDS -> SideConfigWidget.ResourceType.FLUIDS;
+                    case GAS -> SideConfigWidget.ResourceType.GAS;
+                    default -> SideConfigWidget.ResourceType.ITEMS;
+                };
+                
+                sideConfigWidget = new SideConfigWidget(
+                    x + 8, y + 40, 160, 110,
+                    be.getBlockPos(), be, resourceType
                 );
-                this.addRenderableWidget(enableButton);
+                this.addRenderableWidget(sideConfigWidget);
+            }
+            case ENERGY -> {
+                // Add side configuration widget for Energy
+                sideConfigWidget = new SideConfigWidget(
+                    x + 8, y + 40, 160, 110,
+                    be.getBlockPos(), be, SideConfigWidget.ResourceType.ENERGY
+                );
+                this.addRenderableWidget(sideConfigWidget);
             }
         }
     }
@@ -192,6 +192,7 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
             case ITEMS -> renderItemsTab(poseStack);
             case FLUIDS -> renderFluidsTab(poseStack);
             case ENERGY -> renderEnergyTab(poseStack);
+            case GAS -> renderGasTab(poseStack);
             case NETWORK -> renderNetworkTab(poseStack);
         }
     }
@@ -287,6 +288,40 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         this.font.draw(poseStack, 
             Component.literal("Total Transferred: " + be.getTotalTransferred()), 
             8, 65, 0x404040);
+    }
+    
+    /**
+     * Render Gas tab content (Mekanism integration)
+     */
+    private void renderGasTab(PoseStack poseStack) {
+        this.font.draw(poseStack, Component.translatable("gui.bonepipe.gas.title"), 
+            8, 20, 0x404040);
+        
+        AdapterBlockEntity be = menu.getBlockEntity();
+        
+        // Show transfer status
+        boolean enabled = be.isEnabled();
+        this.font.draw(poseStack, 
+            Component.translatable("gui.bonepipe.status").append(": " + (enabled ? "Enabled" : "Disabled")), 
+            8, 35, enabled ? 0x00AA00 : 0xAA0000);
+        
+        // Show transfer rate with upgrades
+        long baseRate = 1000; // mB per tick
+        long actualRate = (long)(baseRate * be.getSpeedMultiplier());
+        this.font.draw(poseStack, 
+            Component.literal("Transfer Rate: " + actualRate + " mB/tick"), 
+            8, 50, 0x404040);
+        
+        // Show Mekanism status
+        this.font.draw(poseStack, 
+            Component.literal("Mekanism: Installed"), 
+            8, 65, 0x00FFAA);
+        
+        if (be.hasFilterUpgrade()) {
+            this.font.draw(poseStack, 
+                Component.literal("Gas Filter: Not configured"), 
+                8, 80, 0x808080);
+        }
     }
     
     /**

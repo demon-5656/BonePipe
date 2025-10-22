@@ -70,6 +70,24 @@ public class AdapterBlock extends Block implements EntityBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos, 
                                  Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide) {
+            // Rotate block on Shift + Right Click
+            if (player.isShiftKeyDown() && player.getItemInHand(hand).isEmpty()) {
+                // Cycle through all 6 directions
+                Direction currentFacing = state.getValue(FACING);
+                Direction newFacing = switch (currentFacing) {
+                    case NORTH -> Direction.EAST;
+                    case EAST -> Direction.SOUTH;
+                    case SOUTH -> Direction.WEST;
+                    case WEST -> Direction.UP;
+                    case UP -> Direction.DOWN;
+                    case DOWN -> Direction.NORTH;
+                };
+                
+                level.setBlock(pos, state.setValue(FACING, newFacing), 3);
+                return InteractionResult.CONSUME;
+            }
+            
+            // Open GUI on normal right-click
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof AdapterBlockEntity adapter) {
                 NetworkHooks.openScreen((ServerPlayer) player, adapter, pos);
