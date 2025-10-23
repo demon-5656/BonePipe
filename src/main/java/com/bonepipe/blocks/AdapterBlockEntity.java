@@ -236,7 +236,8 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
                 0.5f, 1.0f);
         }
         
-        BonePipe.LOGGER.info("Adapter at {} registered in network {}", worldPosition, key);
+        BonePipe.LOGGER.info("Adapter registered: {} → Network {} ({} nodes)", 
+            worldPosition, key.getFrequency(), network.getNodeCount());
     }
 
     /**
@@ -416,10 +417,13 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
 
     public void setFrequency(String frequency) {
         if (!this.frequency.equals(frequency)) {
+            BonePipe.LOGGER.info("Changing frequency: old='{}', new='{}' at {}", 
+                this.frequency, frequency, getBlockPos());
             unregisterFromNetwork();
             this.frequency = frequency;
             registeredInNetwork = false;
             setChanged();
+            BonePipe.LOGGER.info("Frequency changed successfully, will re-register in network");
         }
     }
 
@@ -450,6 +454,13 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
      */
     public boolean isConnected() {
         return connectedMachine != null;
+    }
+    
+    /**
+     * Get the name of the connected machine for display
+     */
+    public String getConnectedMachineName() {
+        return MachineDetector.getMachineName(connectedMachine);
     }
     
     /**

@@ -21,10 +21,15 @@ public class EnergyTransferHandler implements ITransferHandler {
     
     @Override
     public TransferResult transfer(NetworkNode source, NetworkNode destination, long maxAmount) {
+        BonePipe.LOGGER.info("⚡ ENERGY TRANSFER attempt: {} → {}, max amount: {}", 
+            source.getPosition(), destination.getPosition(), maxAmount);
+        
         AdapterBlockEntity srcAdapter = source.getAdapter();
         AdapterBlockEntity dstAdapter = destination.getAdapter();
         
         if (srcAdapter == null || dstAdapter == null) {
+            BonePipe.LOGGER.warn("  ❌ Invalid adapters: src={}, dst={}", 
+                srcAdapter != null, dstAdapter != null);
             return TransferResult.failure("Invalid adapters");
         }
         
@@ -33,19 +38,35 @@ public class EnergyTransferHandler implements ITransferHandler {
         BlockEntity dstMachine = getMachineConnection(dstAdapter);
         
         if (srcMachine == null || dstMachine == null) {
+            BonePipe.LOGGER.warn("  ❌ Missing machines: src={}, dst={}", 
+                srcMachine != null, dstMachine != null);
             return TransferResult.empty();
         }
+        
+        BonePipe.LOGGER.info("  Machines: {} → {}", 
+            srcMachine.getClass().getSimpleName(), 
+            dstMachine.getClass().getSimpleName());
         
         // Get energy handlers
-        IEnergyStorage srcHandler = getEnergyHandler(srcMachine, getSideToMachine(srcAdapter));
-        IEnergyStorage dstHandler = getEnergyHandler(dstMachine, getSideToMachine(dstAdapter));
+        Direction srcSide = getSideToMachine(srcAdapter);
+        Direction dstSide = getSideToMachine(dstAdapter);
+        IEnergyStorage srcHandler = getEnergyHandler(srcMachine, srcSide);
+        IEnergyStorage dstHandler = getEnergyHandler(dstMachine, dstSide);
         
         if (srcHandler == null || dstHandler == null) {
+            BonePipe.LOGGER.warn("  ❌ Missing handlers: src={} (side {}), dst={} (side {})", 
+                srcHandler != null, srcSide, dstHandler != null, dstSide);
             return TransferResult.empty();
         }
+        
+        BonePipe.LOGGER.info("  Energy: src has {}/{}, dst has {}/{}", 
+            srcHandler.getEnergyStored(), srcHandler.getMaxEnergyStored(),
+            dstHandler.getEnergyStored(), dstHandler.getMaxEnergyStored());
         
         // Check if source can extract and destination can receive
         if (!srcHandler.canExtract() || !dstHandler.canReceive()) {
+            BonePipe.LOGGER.warn("  ❌ Cannot transfer: src.canExtract={}, dst.canReceive={}", 
+                srcHandler.canExtract(), dstHandler.canReceive());
             return TransferResult.empty();
         }
         
@@ -55,12 +76,14 @@ public class EnergyTransferHandler implements ITransferHandler {
         // Simulate extract from source
         int extractable = srcHandler.extractEnergy(amount, true);
         if (extractable == 0) {
+            BonePipe.LOGGER.debug("  ⚠️ Nothing to extract");
             return TransferResult.empty();
         }
         
         // Simulate insert to destination
         int insertable = dstHandler.receiveEnergy(extractable, true);
         if (insertable == 0) {
+            BonePipe.LOGGER.debug("  ⚠️ Cannot insert (dest full?)");
             return TransferResult.empty();
         }
         
@@ -69,6 +92,8 @@ public class EnergyTransferHandler implements ITransferHandler {
         
         // Real insert
         int inserted = dstHandler.receiveEnergy(extracted, false);
+        
+        BonePipe.LOGGER.info("  ✅ Transferred {} FE", inserted);
         
         // Return result
         return inserted > 0 ? 

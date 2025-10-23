@@ -58,6 +58,18 @@ public class AdapterBlock extends Block implements EntityBlock {
     }
     
     @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (!level.isClientSide && placer instanceof Player player) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof AdapterBlockEntity adapter) {
+                adapter.setOwner(player.getUUID());
+                adapter.setChanged();
+            }
+        }
+    }
+    
+    @Override
     public BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }

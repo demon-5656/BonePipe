@@ -116,6 +116,7 @@ public class TransferScheduler {
         int operationsCount = 0;
         
         var validNodes = network.getValidNodes();
+        
         if (validNodes.isEmpty()) {
             return 0;
         }
@@ -153,8 +154,6 @@ public class TransferScheduler {
         }
         
         if (inputNodes.isEmpty() || outputNodes.isEmpty()) {
-            BonePipe.LOGGER.trace("Channel {}: {} inputs, {} outputs - skipping", 
-                handler.getChannel(), inputNodes.size(), outputNodes.size());
             return 0;
         }
         

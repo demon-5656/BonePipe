@@ -49,11 +49,6 @@ public class Config {
         public final ForgeConfigSpec.IntValue baseFluidTransferRate;
         public final ForgeConfigSpec.IntValue baseEnergyTransferRate;
         
-        // Upgrade bonuses
-        public final ForgeConfigSpec.DoubleValue speedUpgradeMultiplier;
-        public final ForgeConfigSpec.DoubleValue rangeUpgradeMultiplier;
-        public final ForgeConfigSpec.IntValue stackUpgradeBonus;
-        
         // Network settings
         public final ForgeConfigSpec.IntValue baseWirelessRange;
         public final ForgeConfigSpec.BooleanValue allowCrossDimensional;
@@ -82,18 +77,6 @@ public class Config {
             baseEnergyTransferRate = builder
                 .comment("Base energy transfer rate (FE per operation) - Mekanism Ultimate tier: 204800")
                 .defineInRange("baseEnergyTransferRate", 204800, 1, 1000000);
-            builder.pop();
-            
-            builder.push("upgrades");
-            speedUpgradeMultiplier = builder
-                .comment("Speed upgrade multiplier (stacks multiplicatively: x2.0 per card)")
-                .defineInRange("speedUpgradeMultiplier", 2.0, 1.0, 10.0);
-            rangeUpgradeMultiplier = builder
-                .comment("Range upgrade multiplier (stacks additively)")
-                .defineInRange("rangeUpgradeMultiplier", 2.0, 1.0, 10.0);
-            stackUpgradeBonus = builder
-                .comment("Stack size bonus per upgrade (+8 items per card)")
-                .defineInRange("stackUpgradeBonus", 8, 1, 64);
             builder.pop();
             
             builder.push("network");

@@ -85,8 +85,8 @@ dependencies {
     // Mekanism - local JAR for Gas support compilation
     compileOnly fg.deobf(files('libs/Mekanism-1.19.2-10.3.9.13.jar'))
     
-    // The One Probe (опционально, через CurseForge)  
-    // compileOnly fg.deobf("curse.maven:the-one-probe-245211:4460375")
+    // The One Probe - local JAR
+    compileOnly fg.deobf(files('/home/pc243/.local/share/PrismLauncher/instances/1.19.2/minecraft/mods/theoneprobe-1.19-6.2.2.jar'))
 }
 
 tasks.named('processResources', ProcessResources).configure {

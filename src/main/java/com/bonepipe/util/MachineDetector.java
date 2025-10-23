@@ -12,109 +12,85 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 public class MachineDetector {
     
     /**
-     * Find the first adjacent BlockEntity that has any supported capability
+     * Find connected machine in the direction the adapter is facing
      * Returns null if no machine found
      */
     public static BlockEntity findConnectedMachine(Level level, BlockPos adapterPos) {
-        for (Direction dir : Direction.values()) {
-            BlockPos checkPos = adapterPos.relative(dir);
-            BlockEntity be = level.getBlockEntity(checkPos);
-            
-            if (be != null && isMachine(be)) {
-                return be;
-            }
+        // Get the adapter's facing direction from blockstate
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(adapterPos);
+        if (!(state.getBlock() instanceof com.bonepipe.blocks.AdapterBlock)) {
+            return null;
         }
+        
+        Direction facing = state.getValue(com.bonepipe.blocks.AdapterBlock.FACING);
+        BlockPos checkPos = adapterPos.relative(facing);
+        BlockEntity be = level.getBlockEntity(checkPos);
+        
+        if (be == null) {
+            return null;
+        }
+        
+        if (isMachine(be, facing.getOpposite())) {
+            return be;
+        }
+        
         return null;
     }
     
     /**
-     * Find the direction to the connected machine
+     * Find the direction to the connected machine (same as adapter facing)
      * Returns null if no machine found
      */
     public static Direction findMachineDirection(Level level, BlockPos adapterPos) {
-        for (Direction dir : Direction.values()) {
-            BlockPos checkPos = adapterPos.relative(dir);
-            BlockEntity be = level.getBlockEntity(checkPos);
-            
-            if (be != null && isMachine(be)) {
-                return dir;
-            }
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(adapterPos);
+        if (!(state.getBlock() instanceof com.bonepipe.blocks.AdapterBlock)) {
+            return null;
         }
+        
+        Direction facing = state.getValue(com.bonepipe.blocks.AdapterBlock.FACING);
+        BlockPos checkPos = adapterPos.relative(facing);
+        BlockEntity be = level.getBlockEntity(checkPos);
+        
+        if (be != null && isMachine(be, facing.getOpposite())) {
+            return facing;
+        }
+        
         return null;
     }
     
     /**
-     * Check if a BlockEntity is a "machine" (has any supported capability)
+     * Check if a BlockEntity is a "machine" (has any supported capability on the given side)
+     * @param be The BlockEntity to check
+     * @param side The side of the machine to check (from machine's perspective)
      */
-    public static boolean isMachine(BlockEntity be) {
-        // Check for common capabilities
-        if (hasItemHandler(be)) return true;
-        if (hasFluidHandler(be)) return true;
-        if (hasEnergy(be)) return true;
+    public static boolean isMachine(BlockEntity be, Direction side) {
+        // Check for common capabilities on the specific side
+        boolean hasItem = be.getCapability(ForgeCapabilities.ITEM_HANDLER, side).isPresent();
+        boolean hasFluid = be.getCapability(ForgeCapabilities.FLUID_HANDLER, side).isPresent();
+        boolean hasEnergy = be.getCapability(ForgeCapabilities.ENERGY, side).isPresent();
         
-        // Check Mekanism chemical capabilities (optional dependency)
-        if (hasMekanismChemical(be)) return true;
+        // Also check without side specification (some machines use null side)
+        if (!hasItem) hasItem = be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).isPresent();
+        if (!hasFluid) hasFluid = be.getCapability(ForgeCapabilities.FLUID_HANDLER, null).isPresent();
+        if (!hasEnergy) hasEnergy = be.getCapability(ForgeCapabilities.ENERGY, null).isPresent();
         
-        return false;
+        return hasItem || hasFluid || hasEnergy;
     }
     
     /**
-     * Check if BlockEntity has Mekanism chemical capabilities
-     * Uses reflection to avoid hard dependency on Mekanism
+     * Get human-readable machine name
      */
-    public static boolean hasMekanismChemical(BlockEntity be) {
-        try {
-            // Try to load Mekanism's chemical capability classes
-            Class<?> gasCapabilityClass = Class.forName("mekanism.api.chemical.gas.GasHandler");
-            Class<?> infusionCapabilityClass = Class.forName("mekanism.api.chemical.infuse.InfusionHandler");
-            Class<?> pigmentCapabilityClass = Class.forName("mekanism.api.chemical.pigment.PigmentHandler");
-            Class<?> slurryCapabilityClass = Class.forName("mekanism.api.chemical.slurry.SlurryHandler");
-            
-            // Check for capabilities using Mekanism's API
-            // This is a simplified check - actual implementation would need proper capability references
-            return false; // Placeholder - would require Mekanism dependency to implement fully
-            
-        } catch (ClassNotFoundException e) {
-            // Mekanism not installed - that's okay
-            return false;
-        }
-    }
-    
-    /**
-     * Check if BlockEntity has item handler capability on any side
-     */
-    public static boolean hasItemHandler(BlockEntity be) {
-        for (Direction dir : Direction.values()) {
-            if (be.getCapability(ForgeCapabilities.ITEM_HANDLER, dir).isPresent()) {
-                return true;
-            }
-        }
-        // Also check without side
-        return be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).isPresent();
-    }
-    
-    /**
-     * Check if BlockEntity has fluid handler capability on any side
-     */
-    public static boolean hasFluidHandler(BlockEntity be) {
-        for (Direction dir : Direction.values()) {
-            if (be.getCapability(ForgeCapabilities.FLUID_HANDLER, dir).isPresent()) {
-                return true;
-            }
-        }
-        return be.getCapability(ForgeCapabilities.FLUID_HANDLER, null).isPresent();
-    }
-    
-    /**
-     * Check if BlockEntity has energy capability on any side
-     */
-    public static boolean hasEnergy(BlockEntity be) {
-        for (Direction dir : Direction.values()) {
-            if (be.getCapability(ForgeCapabilities.ENERGY, dir).isPresent()) {
-                return true;
-            }
-        }
-        return be.getCapability(ForgeCapabilities.ENERGY, null).isPresent();
+    public static String getMachineName(BlockEntity be) {
+        if (be == null) return "None";
+        
+        String className = be.getClass().getSimpleName();
+        
+        // Clean up common prefixes
+        className = className.replace("TileEntity", "");
+        className = className.replace("BlockEntity", "");
+        
+        // Add spaces before capital letters
+        return className.replaceAll("([A-Z])", " $1").trim();
     }
     
     /**

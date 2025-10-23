@@ -40,10 +40,32 @@ public class UpdateFrequencyPacket {
             if (player != null && player.level.isLoaded(pos)) {
                 BlockEntity be = player.level.getBlockEntity(pos);
                 if (be instanceof AdapterBlockEntity adapter) {
+                    com.bonepipe.BonePipe.LOGGER.info("Received frequency update packet: pos={}, freq={}, owner={}", 
+                        pos, frequency, adapter.getOwner());
+                    
                     // Verify player has permission
                     if (adapter.getOwner() == null || adapter.getOwner().equals(player.getUUID())) {
                         adapter.setFrequency(frequency);
                         adapter.setChanged();
+                        player.level.sendBlockUpdated(pos, adapter.getBlockState(), adapter.getBlockState(), 3);
+                        
+                        // Send sync packet back to client
+                        NetworkHandler.CHANNEL.sendTo(
+                            new SyncAdapterDataPacket(
+                                pos,
+                                adapter.getFrequency(),
+                                adapter.getOwner(),
+                                adapter.getAccessMode(),
+                                adapter.isEnabled()
+                            ),
+                            player.connection.connection,
+                            net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT
+                        );
+                        
+                        com.bonepipe.BonePipe.LOGGER.info("Frequency set successfully: {}", frequency);
+                    } else {
+                        com.bonepipe.BonePipe.LOGGER.warn("Player {} has no permission to change adapter at {}", 
+                            player.getDisplayName().getString(), pos);
                     }
                 }
             }
