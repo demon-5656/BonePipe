@@ -3,7 +3,7 @@
 # BonePipe Test Installation Script
 # Copies mod to Minecraft mods folder for testing
 
-set VERSION "3.0.11"
+set VERSION "3.0.12"
 set JAR_NAME "bonepipe-$VERSION.jar"
 set MODS_DIR "$HOME/.local/share/PrismLauncher/instances/1.19.2/minecraft/mods"
 

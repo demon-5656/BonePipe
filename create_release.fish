@@ -3,7 +3,7 @@
 # BonePipe v3.0.0 Release Script
 # Usage: ./create_release.fish
 
-set VERSION "3.0.0"
+set VERSION "3.0.12"
 set JAR_NAME "bonepipe-$VERSION.jar"
 set RELEASE_JAR "bonepipe-$VERSION-release.jar"
 
@@ -13,77 +13,34 @@ echo "🚀 Creating BonePipe v$VERSION release..."
 if not test -f "build/libs/$JAR_NAME"
     echo "❌ Error: $JAR_NAME not found in build/libs/"
     echo "Run ./gradlew build first"
-    exit 1
-end
+    printf "## 🦴 BonePipe v%s\n\n" $VERSION > release_notes.txt
+    printf "### ✨ Основные возможности\n" >> release_notes.txt
+    printf "- Беспроводная передача предметов, жидкостей и газов\n" >> release_notes.txt
+    printf "- Адаптеры с настройкой каналов и частоты\n" >> release_notes.txt
+    printf "- Поддержка Mekanism Gas\n" >> release_notes.txt
+    printf "- Базовая фильтрация\n" >> release_notes.txt
+    printf "- Сохранение конфигурации адаптера\n" >> release_notes.txt
+    printf "- Синхронизация данных между сервером и клиентом\n\n" >> release_notes.txt
+    printf "### 📦 Пакет\n" >> release_notes.txt
+    printf "- Minecraft: 1.19.2\n" >> release_notes.txt
+    printf "- Forge: 43.3.0+\n" >> release_notes.txt
+    printf "- Размер: %s\n\n" (du -h $RELEASE_JAR | cut -f1) >> release_notes.txt
+    printf "### 🔧 Установка\n" >> release_notes.txt
+    printf "1. Скачать %s\n" $RELEASE_JAR >> release_notes.txt
+    printf "2. Поместить в папку mods/\n" >> release_notes.txt
+    printf "3. Запустить Minecraft 1.19.2 с Forge\n\n" >> release_notes.txt
+    printf "### 📝 Изменения в v%s\n" $VERSION >> release_notes.txt
+    printf "- Исправлено сохранение конфигурации адаптера\n" >> release_notes.txt
+    printf "- Исправлен баг с NPE при загрузке мира\n" >> release_notes.txt
+    printf "- Улучшена синхронизация данных между сервером и клиентом\n" >> release_notes.txt
 
-# Copy JAR for release
-echo "📦 Copying JAR file..."
-cp "build/libs/$JAR_NAME" "./$RELEASE_JAR"
-echo "✅ Created $RELEASE_JAR (Size: "(du -h $RELEASE_JAR | cut -f1)")"
-
-# Create release notes
-set NOTES "## 🎨 Major GUI Overhaul
-
-Complete GUI redesign following **Mekanism standards** - the gold standard for Minecraft mod GUIs.
-
-### ✨ Key Features
-
-- **Mekanism-compliant architecture** (95% conformance)
-- **Standard dimensions**: 176×166 pixels
-- **Single-screen design** - removed complex tab system
-- **6 side configuration buttons** for all directions (Up, Down, North, South, West, East)
-- **Clean frequency input** with EditBox
-- **Optimized rendering** - 260 lines vs 600+ (57% reduction)
-
-### 📏 Technical Implementation
-
-- \`inventoryLabelY = imageHeight - 94\` (Mekanism formula)
-- \`BASE_Y_OFFSET = 84\` (player inventory position)
-- Single \`blit()\` background rendering
-- Relative coordinates in \`renderLabels()\`
-- Proper rendering pipeline: background → super → tooltips
-- Mode cycling: **DISABLED** → **OUTPUT** → **INPUT** → **BOTH**
-
-### 📦 Package Details
-
-- **Size**: 135 KB (optimized)
-- **Minecraft**: 1.19.2
-- **Forge**: 43.3.0+
-- **Performance**: Improved rendering pipeline
-
-### 📚 Documentation
-
-- \`MEKANISM_GUI_ANALYSIS.md\` - Complete Mekanism GUI architecture analysis (560+ lines)
-- \`BONEPIPE_VS_MEKANISM_GUI.md\` - Detailed comparison and conformance report
-- \`GUI_REDESIGN.md\` - v3.0.0 redesign documentation
-
-### 🔧 Installation
-
-1. Download \`bonepipe-3.0.0-release.jar\`
-2. Place in your Minecraft \`mods/\` folder
-3. Launch Minecraft 1.19.2 with Forge
-
-### 🎯 What Changed
-
-**Removed**:
-- Complex tab system (5 tabs)
-- Custom widget classes (4 files)
-- Over-engineered rendering code
-
-**Added**:
-- Mekanism-style single-screen GUI
-- Standard EditBox for frequency
-- Professional side configuration buttons
-- Clean, maintainable codebase
-
-**Result**: Professional, performant, Mekanism-compliant GUI! 🏆"
-
-# Create GitHub release
-echo "🌐 Creating GitHub release v$VERSION..."
-gh release create "v$VERSION" \
-    "$RELEASE_JAR" \
-    --title "BonePipe v$VERSION - Mekanism-style GUI" \
-    --notes "$NOTES"
+    echo "🌐 Creating GitHub release v$VERSION..."
+    gh release create "v$VERSION" $RELEASE_JAR --title "BonePipe v$VERSION — Stable Release" --notes-file release_notes.txt
+- Исправлено сохранение конфигурации адаптера
+- Исправлен баг с NPE при загрузке мира
+- Улучшена синхронизация данных между сервером и клиентом
+"
+    # Передача файла без кавычек, fish корректно интерпретирует переменную
 
 if test $status -eq 0
     echo "✅ Release v$VERSION created successfully!"
