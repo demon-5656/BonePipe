@@ -49,6 +49,15 @@ public class UpdateFrequencyPacket {
                         adapter.setChanged();
                         player.level.sendBlockUpdated(pos, adapter.getBlockState(), adapter.getBlockState(), 3);
                         
+                        // Collect channel modes for sync
+                        java.util.Map<com.bonepipe.transfer.TransferChannel, AdapterBlockEntity.ChannelConfig.TransferMode> channelModes = new java.util.HashMap<>();
+                        for (com.bonepipe.transfer.TransferChannel channel : com.bonepipe.transfer.TransferChannel.values()) {
+                            AdapterBlockEntity.ChannelConfig config = adapter.getChannelConfig(channel);
+                            if (config != null) {
+                                channelModes.put(channel, config.mode);
+                            }
+                        }
+                        
                         // Send sync packet back to client
                         NetworkHandler.CHANNEL.sendTo(
                             new SyncAdapterDataPacket(
@@ -56,7 +65,9 @@ public class UpdateFrequencyPacket {
                                 adapter.getFrequency(),
                                 adapter.getOwner(),
                                 adapter.getAccessMode(),
-                                adapter.isEnabled()
+                                adapter.isEnabled(),
+                                adapter.getConnectedMachineName(),
+                                channelModes
                             ),
                             player.connection.connection,
                             net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT

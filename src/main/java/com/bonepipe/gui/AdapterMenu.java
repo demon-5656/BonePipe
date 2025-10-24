@@ -28,26 +28,7 @@ public class AdapterMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
-        // NOTE: Upgrade slots removed - upgrades now installed by right-clicking adapter with upgrade card
-        
-        // Add player inventory (standard 3x9 grid)
-        // Using Mekanism-style positioning: BASE_Y_OFFSET = 84
-        int yOffset = 84;
-        int xOffset = 8;
-        
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 
-                    xOffset + col * 18, yOffset + row * 18));
-            }
-        }
-        
-        // Add player hotbar (bottom row)
-        // Position: yOffset + 58 (standard Minecraft inventory spacing)
-        yOffset += 58;
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, xOffset + col * 18, yOffset));
-        }
+        // No inventory slots - just configuration GUI
     }
     
     /**
@@ -78,40 +59,11 @@ public class AdapterMenu extends AbstractContainerMenu {
     
     /**
      * Handle quick move (shift-click)
-     * Note: No upgrade slots in GUI anymore - upgrades installed directly on adapter
      */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
-        
-        if (slot != null && slot.hasItem()) {
-            ItemStack slotStack = slot.getItem();
-            itemstack = slotStack.copy();
-            
-            // All slots are player inventory (no custom slots)
-            int playerInvSize = 36;
-            
-            // Move between inventory sections
-            if (index < playerInvSize) {
-                // Already in player inventory, no other slots to move to
-                return ItemStack.EMPTY;
-            }
-            
-            if (slotStack.isEmpty()) {
-                slot.set(ItemStack.EMPTY);
-            } else {
-                slot.setChanged();
-            }
-            
-            if (slotStack.getCount() == itemstack.getCount()) {
-                return ItemStack.EMPTY;
-            }
-            
-            slot.onTake(player, slotStack);
-        }
-        
-        return itemstack;
+        // No slots - nothing to move
+        return ItemStack.EMPTY;
     }
     
     /**

@@ -39,13 +39,14 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     private UUID owner = null;
     private AccessMode accessMode = AccessMode.PRIVATE;
     
-    // Side configurations (6 directions)
-    private Map<Direction, SideConfig> sideConfigs = new HashMap<>();
+    // Channel configurations (per transfer type)
+    private Map<com.bonepipe.transfer.TransferChannel, ChannelConfig> channelConfigs = new HashMap<>();
     
     // Connection state
     private BlockEntity connectedMachine = null;
     private Direction machineDirection = null;
     private int connectionCheckCooldown = 0;
+    private String connectedMachineName = "None"; // Cached for client display
     
     // Capability caching for performance
     private LazyOptional<?> cachedItemHandler = LazyOptional.empty();
@@ -79,10 +80,11 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
     public AdapterBlockEntity(BlockPos pos, BlockState state) {
         super(com.bonepipe.core.Registration.ADAPTER_BE.get(), pos, state);
         
-        // Initialize side configs
-        for (Direction dir : Direction.values()) {
-            sideConfigs.put(dir, new SideConfig());
+        // Initialize channel configs
+        for (com.bonepipe.transfer.TransferChannel channel : com.bonepipe.transfer.TransferChannel.values()) {
+            channelConfigs.put(channel, new ChannelConfig());
         }
+        
     }
     
     // UPGRADES REMOVED - no recalculation needed
@@ -147,13 +149,18 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         connectedMachine = MachineDetector.findConnectedMachine(level, worldPosition);
         machineDirection = MachineDetector.findMachineDirection(level, worldPosition);
         
+        // Update cached machine name on server
+        if (level != null && !level.isClientSide()) {
+            connectedMachineName = MachineDetector.getMachineName(connectedMachine);
+        }
+        
         // If machine changed, invalidate capability cache
         if (connectedMachine != oldMachine) {
             invalidateCapabilityCache();
             
             if (connectedMachine != null) {
-                BonePipe.LOGGER.debug("Adapter at {} connected to machine at {} (side: {})", 
-                    worldPosition, connectedMachine.getBlockPos(), machineDirection);
+                BonePipe.LOGGER.debug("Adapter at {} connected to machine: {}", 
+                    worldPosition, connectedMachineName);
             } else if (oldMachine != null) {
                 BonePipe.LOGGER.debug("Adapter at {} disconnected from machine", worldPosition);
                 unregisterFromNetwork();
@@ -240,6 +247,44 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             worldPosition, key.getFrequency(), network.getNodeCount());
     }
 
+    // Network sync for chunk loading - Mekanism pattern
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public CompoundTag getUpdateTag() {
+        // Send minimal sync data for chunk loading - NOT full NBT!
+        // This prevents overwriting saved data during world load
+        CompoundTag tag = super.getUpdateTag();
+        
+        // Only sync client-visible data, not configuration
+        if (owner != null) {
+            tag.putUUID("owner", owner);
+        }
+        tag.putString("frequency", frequency);
+        tag.putString("connectedMachineName", connectedMachineName);
+        
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        // Handle chunk sync data - DON'T call full load()!
+        super.handleUpdateTag(tag);
+        
+        // Only update visual fields from chunk sync
+        if (tag.hasUUID("owner")) {
+            owner = tag.getUUID("owner");
+        }
+        if (tag.contains("frequency")) {
+            frequency = tag.getString("frequency");
+        }
+        if (tag.contains("connectedMachineName")) {
+            connectedMachineName = tag.getString("connectedMachineName");
+        }
+    }
     /**
      * Unregister from network
      */
@@ -337,18 +382,21 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         }
         tag.putBoolean("chunkLoadingEnabled", chunkLoadingEnabled);
         
-        // Save side configs
-        CompoundTag sideConfigsTag = new CompoundTag();
-        for (Direction dir : Direction.values()) {
-            SideConfig config = sideConfigs.get(dir);
+        // Save channel configs
+        CompoundTag channelConfigsTag = new CompoundTag();
+        StringBuilder debugModes = new StringBuilder();
+        for (com.bonepipe.transfer.TransferChannel channel : com.bonepipe.transfer.TransferChannel.values()) {
+            ChannelConfig config = channelConfigs.get(channel);
             if (config != null) {
-                CompoundTag sideTag = new CompoundTag();
-                sideTag.putBoolean("enabled", config.enabled);
-                sideTag.putString("mode", config.mode.name());
-                sideConfigsTag.put(dir.getName(), sideTag);
+                CompoundTag channelTag = new CompoundTag();
+                channelTag.putString("mode", config.mode.name());
+                channelConfigsTag.put(channel.getId(), channelTag);
+                debugModes.append(channel.getId()).append("=").append(config.mode.name()).append(" ");
             }
         }
-        tag.put("sideConfigs", sideConfigsTag);
+        tag.put("channelConfigs", channelConfigsTag);
+        
+
     }
 
     @Override
@@ -373,29 +421,31 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         if (tag.contains("chunkLoadingEnabled")) {
             boolean wasEnabled = tag.getBoolean("chunkLoadingEnabled");
             // Re-enable chunk loading if it was enabled before
-            if (wasEnabled && !level.isClientSide()) {
+            if (wasEnabled && level != null && !level.isClientSide()) {
                 enableChunkLoading();
             }
         }
         
-        // Load side configs
-        if (tag.contains("sideConfigs")) {
-            CompoundTag sideConfigsTag = tag.getCompound("sideConfigs");
-            for (Direction dir : Direction.values()) {
-                if (sideConfigsTag.contains(dir.getName())) {
-                    CompoundTag sideTag = sideConfigsTag.getCompound(dir.getName());
-                    SideConfig config = sideConfigs.get(dir);
+        // Load channel configs
+        StringBuilder debugModes = new StringBuilder();
+        if (tag.contains("channelConfigs")) {
+            CompoundTag channelConfigsTag = tag.getCompound("channelConfigs");
+            for (com.bonepipe.transfer.TransferChannel channel : com.bonepipe.transfer.TransferChannel.values()) {
+                if (channelConfigsTag.contains(channel.getId())) {
+                    CompoundTag channelTag = channelConfigsTag.getCompound(channel.getId());
+                    ChannelConfig config = channelConfigs.get(channel);
                     if (config == null) {
-                        config = new SideConfig();
-                        sideConfigs.put(dir, config);
+                        config = new ChannelConfig();
+                        channelConfigs.put(channel, config);
                     }
-                    config.enabled = sideTag.getBoolean("enabled");
-                    if (sideTag.contains("mode")) {
-                        config.mode = SideConfig.TransferMode.valueOf(sideTag.getString("mode"));
+                    if (channelTag.contains("mode")) {
+                        config.mode = ChannelConfig.TransferMode.valueOf(channelTag.getString("mode"));
+                        debugModes.append(channel.getId()).append("=").append(config.mode.name()).append(" ");
                     }
                 }
             }
         }
+        
     }
 
     // MenuProvider implementation
@@ -422,7 +472,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             unregisterFromNetwork();
             this.frequency = frequency;
             registeredInNetwork = false;
-            setChanged();
+            // Only mark changed on server - client shouldn't trigger saves
+            if (level != null && !level.isClientSide()) {
+                setChanged();
+            }
             BonePipe.LOGGER.info("Frequency changed successfully, will re-register in network");
         }
     }
@@ -436,7 +489,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             unregisterFromNetwork();
             this.owner = owner;
             registeredInNetwork = false;
-            setChanged();
+            // Only mark changed on server - client shouldn't trigger saves
+            if (level != null && !level.isClientSide()) {
+                setChanged();
+            }
         }
     }
 
@@ -446,7 +502,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
 
     public void setAccessMode(AccessMode mode) {
         this.accessMode = mode;
-        setChanged();
+        // Only mark changed on server - client shouldn't trigger saves
+        if (level != null && !level.isClientSide()) {
+            setChanged();
+        }
     }
     
     /**
@@ -460,7 +519,19 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
      * Get the name of the connected machine for display
      */
     public String getConnectedMachineName() {
+        if (level != null && level.isClientSide()) {
+            // On client, use cached name from sync packet
+            return connectedMachineName;
+        }
+        // On server, get real name
         return MachineDetector.getMachineName(connectedMachine);
+    }
+    
+    /**
+     * Set machine name (called from sync packet on client)
+     */
+    public void setConnectedMachineName(String name) {
+        this.connectedMachineName = name;
     }
     
     /**
@@ -566,17 +637,37 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             return totalItems + totalFluids + totalEnergy;
         }
     }    /**
-     * Check if adapter is enabled (has machine connected)
+     * Check if adapter is enabled (has machine connected and frequency set)
+     * On client, use synced machine name instead of server-only connectedMachine field
      */
     public boolean isEnabled() {
+        if (level != null && level.isClientSide()) {
+            // On client, check cached machine name from sync packet
+            return connectedMachineName != null && 
+                   !connectedMachineName.isEmpty() && 
+                   !connectedMachineName.equals("None") && 
+                   !frequency.isEmpty();
+        }
+        // On server, use actual connected machine
         return connectedMachine != null && !frequency.isEmpty();
     }
     
     /**
-     * Get side configuration for a direction
+     * Get channel configuration for a transfer type
      */
-    public SideConfig getSideConfig(Direction direction) {
-        return sideConfigs.get(direction);
+    public ChannelConfig getChannelConfig(com.bonepipe.transfer.TransferChannel channel) {
+        return channelConfigs.computeIfAbsent(channel, k -> new ChannelConfig());
+    }
+    
+    /**
+     * Set channel configuration
+     */
+    public void setChannelConfig(com.bonepipe.transfer.TransferChannel channel, ChannelConfig config) {
+        channelConfigs.put(channel, config);
+        // Only mark changed on server - client shouldn't trigger saves
+        if (level != null && !level.isClientSide()) {
+            setChanged();
+        }
     }
     
     /**
@@ -617,15 +708,17 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
         TRUSTED
     }
 
-    public static class SideConfig {
-        public boolean enabled = false;
+    /**
+     * Configuration for a single transfer channel
+     */
+    public static class ChannelConfig {
         public TransferMode mode = TransferMode.DISABLED;
         
-        // Item filtering
+        // Item filtering (only for ITEMS channel)
         private java.util.List<net.minecraft.world.item.ItemStack> itemWhitelist = new java.util.ArrayList<>();
         private boolean itemWhitelistEnabled = false;
         
-        // Fluid filtering
+        // Fluid filtering (only for FLUIDS channel)
         private java.util.Set<net.minecraft.resources.ResourceLocation> fluidWhitelist = new java.util.HashSet<>();
         private boolean fluidWhitelistEnabled = false;
 
@@ -634,6 +727,10 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             INPUT,
             OUTPUT,
             BOTH
+        }
+        
+        public boolean isEnabled() {
+            return mode != TransferMode.DISABLED;
         }
         
         /**
@@ -661,5 +758,33 @@ public class AdapterBlockEntity extends BlockEntity implements MenuProvider {
             }
             return fluidWhitelist.contains(fluidId);
         }
+    }
+    
+    /**
+     * @deprecated Use ChannelConfig instead. This is kept for backward compatibility.
+     */
+    @Deprecated
+    public static class SideConfig {
+        public boolean enabled = false;
+        public TransferMode mode = TransferMode.DISABLED;
+        
+        public enum TransferMode {
+            DISABLED,
+            INPUT,
+            OUTPUT,
+            BOTH
+        }
+    }
+    
+    /**
+     * @deprecated Sides are no longer used. Use getChannelConfig() instead.
+     */
+    @Deprecated
+    public SideConfig getSideConfig(Direction direction) {
+        // Return a dummy config for backward compatibility
+        SideConfig dummy = new SideConfig();
+        dummy.enabled = false;
+        dummy.mode = SideConfig.TransferMode.DISABLED;
+        return dummy;
     }
 }

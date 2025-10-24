@@ -52,6 +52,14 @@ public class NetworkHandler {
             UpdateSideConfigPacket::handle
         );
         
+        INSTANCE.registerMessage(
+            nextId(),
+            UpdateChannelConfigPacket.class,
+            UpdateChannelConfigPacket::encode,
+            UpdateChannelConfigPacket::decode,
+            UpdateChannelConfigPacket::handle
+        );
+        
         // Server -> Client packets
         INSTANCE.registerMessage(
             nextId(),

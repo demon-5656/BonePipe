@@ -13,7 +13,7 @@
       "from": [0, 0, 0],
       "to": [16, 8, 16],
       "faces": {
-        "down": {"texture": "#bottom", "cullface": "down"},
+        "down": {"texture": "#front", "cullface": "down"},
         "up": {"texture": "#top"},
         "north": {"texture": "#side"},
         "south": {"texture": "#side"},
@@ -22,24 +22,28 @@
       }
     },
     {
-      "comment": "Center core (antenna/connection)",
+      "comment": "Center core (antenna/connection pointing up)",
       "from": [6, 8, 6],
       "to": [10, 12, 10],
       "faces": {
         "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Connection indicator (bottom face - connects to machine below) - ACTIVE (green)",
+      "from": [5, 0, 5],
+      "to": [11, 0.5, 11],
+      "faces": {
+        "down": {"texture": "#front", "cullface": "down"},
+        "up": {"texture": "#front"},
         "north": {"texture": "#front"},
         "south": {"texture": "#front"},
         "west": {"texture": "#front"},
         "east": {"texture": "#front"}
-      }
-    },
-    {
-      "comment": "Connection indicator (front face)",
-      "from": [5, 2, 0],
-      "to": [11, 6, 0.5],
-      "faces": {
-        "north": {"texture": "#front", "cullface": "north"},
-        "south": {"texture": "#front"}
       }
     }
   ]

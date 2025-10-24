@@ -1,5 +1,7 @@
 package com.bonepipe.blocks;
 
+import com.bonepipe.network.packets.NetworkHandler;
+import com.bonepipe.network.packets.SyncAdapterDataPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -105,7 +107,38 @@ public class AdapterBlock extends Block implements EntityBlock {
             // Open GUI on normal right-click
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof AdapterBlockEntity adapter) {
+                // Auto-set owner if not set yet
+                if (adapter.getOwner() == null) {
+                    adapter.setOwner(player.getUUID());
+                    adapter.setChanged();
+                }
+                
                 NetworkHooks.openScreen((ServerPlayer) player, adapter, pos);
+                
+                // Collect channel modes for sync
+                java.util.Map<com.bonepipe.transfer.TransferChannel, AdapterBlockEntity.ChannelConfig.TransferMode> channelModes = new java.util.HashMap<>();
+                for (com.bonepipe.transfer.TransferChannel channel : com.bonepipe.transfer.TransferChannel.values()) {
+                    AdapterBlockEntity.ChannelConfig config = adapter.getChannelConfig(channel);
+                    if (config != null) {
+                        channelModes.put(channel, config.mode);
+                    }
+                }
+                
+                // Sync adapter data to client when opening GUI
+                NetworkHandler.CHANNEL.sendTo(
+                    new SyncAdapterDataPacket(
+                        pos,
+                        adapter.getFrequency(),
+                        adapter.getOwner(),
+                        adapter.getAccessMode(),
+                        adapter.isEnabled(),
+                        adapter.getConnectedMachineName(),
+                        channelModes
+                    ),
+                    ((ServerPlayer) player).connection.connection,
+                    net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT
+                );
+                
                 return InteractionResult.CONSUME;
             }
         }

@@ -1,6 +1,5 @@
 package com.bonepipe.transfer;
 
-import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.network.NetworkNode;
 import com.bonepipe.util.MachineDetector;
@@ -12,8 +11,8 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 
 /**
  * Transfer handler for fluids using Forge's IFluidHandler capability
+ * Simplified to match EnergyTransferHandler pattern
  */
-
 public class FluidTransferHandler implements ITransferHandler {
     
     @Override
@@ -35,55 +34,74 @@ public class FluidTransferHandler implements ITransferHandler {
         BlockEntity dstMachine = getMachineConnection(dstAdapter);
         
         if (srcMachine == null || dstMachine == null) {
+            com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Missing machines - src={}, dst={}", 
+                srcMachine != null, dstMachine != null);
             return TransferResult.empty();
         }
         
-        // Get fluid handlers
-        IFluidHandler srcHandler = getFluidHandler(srcMachine, getSideToMachine(srcAdapter));
-        IFluidHandler dstHandler = getFluidHandler(dstMachine, getSideToMachine(dstAdapter));
+        // Get fluid handlers (same pattern as energy)
+        Direction srcSide = getSideToMachine(srcAdapter);
+        Direction dstSide = getSideToMachine(dstAdapter);
+        
+        com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Machines {} (side {}) → {} (side {})",
+            srcMachine.getClass().getSimpleName(), srcSide,
+            dstMachine.getClass().getSimpleName(), dstSide);
+        
+        IFluidHandler srcHandler = getFluidHandler(srcMachine, srcSide);
+        IFluidHandler dstHandler = getFluidHandler(dstMachine, dstSide);
         
         if (srcHandler == null || dstHandler == null) {
+            String machineType = srcMachine.getClass().getSimpleName();
+            if (machineType.contains("Chemical")) {
+                com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: ⚠️ {} doesn't support FLUIDS! Use Mekanism GAS channel or Fluid Tanks instead", machineType);
+            } else {
+                com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: No IFluidHandler capability - src={}, dst={}", 
+                    srcHandler != null, dstHandler != null);
+            }
             return TransferResult.empty();
         }
         
-        // Perform transfer
-        int transferred = 0;
-        int remaining = (int) Math.min(maxAmount, Integer.MAX_VALUE);
+        com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Handlers OK - src tanks={}, dst tanks={}", 
+            srcHandler.getTanks(), dstHandler.getTanks());
         
-        // Try to drain from source and fill destination
-        for (int srcTank = 0; srcTank < srcHandler.getTanks() && remaining > 0; srcTank++) {
-            // Simulate drain
-            FluidStack drainSimulated = srcHandler.drain(remaining, IFluidHandler.FluidAction.SIMULATE);
-            if (drainSimulated.isEmpty()) {
-                continue;
-            }
-            
-            // Simulate fill
-            int fillSimulated = dstHandler.fill(drainSimulated, IFluidHandler.FluidAction.SIMULATE);
-            if (fillSimulated == 0) {
-                continue;
-            }
-            
-            // Real drain
-            FluidStack drained = srcHandler.drain(fillSimulated, IFluidHandler.FluidAction.EXECUTE);
-            if (drained.isEmpty()) {
-                continue;
-            }
-            
-            // Real fill
-            int filled = dstHandler.fill(drained, IFluidHandler.FluidAction.EXECUTE);
-            
-            if (filled != drained.getAmount()) {
-                BonePipe.LOGGER.warn("Fluid transfer mismatch: drained {} but filled {}", 
-                    drained.getAmount(), filled);
-            }
-            
-            transferred += filled;
-            remaining -= filled;
+        // Calculate transfer amount
+        int amount = (int) Math.min(maxAmount, Integer.MAX_VALUE);
+        
+        // Simulate drain from source
+        FluidStack drainable = srcHandler.drain(amount, IFluidHandler.FluidAction.SIMULATE);
+        if (drainable.isEmpty()) {
+            com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Cannot drain (empty or locked)");
+            return TransferResult.empty();
         }
         
-        return transferred > 0 ? 
-            TransferResult.success(transferred) : 
+        com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Can drain {} mb of {}", 
+            drainable.getAmount(), 
+            net.minecraftforge.registries.ForgeRegistries.FLUIDS.getKey(drainable.getFluid()));
+        
+        // Simulate fill to destination
+        int fillable = dstHandler.fill(drainable, IFluidHandler.FluidAction.SIMULATE);
+        if (fillable == 0) {
+            com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Destination full or incompatible");
+            return TransferResult.empty();
+        }
+        
+        com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: Can fill {} mb", fillable);
+        
+        // Real drain
+        FluidStack drained = srcHandler.drain(fillable, IFluidHandler.FluidAction.EXECUTE);
+        if (drained.isEmpty()) {
+            com.bonepipe.BonePipe.LOGGER.warn("💧 FLUID: Real drain FAILED after successful simulate!");
+            return TransferResult.empty();
+        }
+        
+        // Real fill
+        int filled = dstHandler.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+        
+        com.bonepipe.BonePipe.LOGGER.info("💧 FLUID: ✅ Transferred {} mb", filled);
+        
+        // Return result
+        return filled > 0 ? 
+            TransferResult.success(filled) : 
             TransferResult.empty();
     }
     
@@ -98,15 +116,9 @@ public class FluidTransferHandler implements ITransferHandler {
         IFluidHandler handler = getFluidHandler(machine, getSideToMachine(adapter));
         if (handler == null) return false;
         
-        // Check if any tank has drainable fluid
-        for (int i = 0; i < handler.getTanks(); i++) {
-            FluidStack fluid = handler.getFluidInTank(i);
-            if (!fluid.isEmpty()) {
-                return true;
-            }
-        }
-        
-        return false;
+        // Try to simulate drain - if we can drain anything, we can extract
+        FluidStack drainable = handler.drain(Integer.MAX_VALUE, IFluidHandler.FluidAction.SIMULATE);
+        return !drainable.isEmpty();
     }
     
     @Override
@@ -132,13 +144,9 @@ public class FluidTransferHandler implements ITransferHandler {
         IFluidHandler handler = getFluidHandler(machine, getSideToMachine(adapter));
         if (handler == null) return 0;
         
-        long total = 0;
-        for (int i = 0; i < handler.getTanks(); i++) {
-            FluidStack fluid = handler.getFluidInTank(i);
-            total += fluid.getAmount();
-        }
-        
-        return total;
+        // Simulate drain to get actual drainable amount
+        FluidStack drainable = handler.drain(Integer.MAX_VALUE, IFluidHandler.FluidAction.SIMULATE);
+        return drainable.isEmpty() ? 0 : drainable.getAmount();
     }
     
     @Override
@@ -152,6 +160,7 @@ public class FluidTransferHandler implements ITransferHandler {
         IFluidHandler handler = getFluidHandler(machine, getSideToMachine(adapter));
         if (handler == null) return 0;
         
+        // Sum up capacity across all tanks
         long capacity = 0;
         for (int i = 0; i < handler.getTanks(); i++) {
             FluidStack fluid = handler.getFluidInTank(i);
@@ -178,6 +187,7 @@ public class FluidTransferHandler implements ITransferHandler {
      * Get fluid handler capability from a BlockEntity
      */
     private IFluidHandler getFluidHandler(BlockEntity be, Direction side) {
-        return be.getCapability(ForgeCapabilities.FLUID_HANDLER, side).orElse(null);
+        return be.getCapability(ForgeCapabilities.FLUID_HANDLER, side)
+            .orElse(null);
     }
 }

@@ -4,57 +4,57 @@ import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.network.packets.NetworkHandler;
 import com.bonepipe.network.packets.UpdateFrequencyPacket;
+import com.bonepipe.network.packets.UpdateChannelConfigPacket;
+import com.bonepipe.transfer.TransferChannel;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.client.gui.components.Button;
 
 /**
- * Mekanism-style GUI for Wireless Adapter
- * Clean, professional design with side configuration
+ * Channel-based GUI for Wireless Adapter
+ * Configure transfer modes per channel (ITEMS, FLUIDS, ENERGY, MEK_GAS)
  * 
- * v3.0.0 - Complete rewrite based on Mekanism best practices
+ * v3.0.11 - Rewritten to use channel configuration instead of sides
  */
 public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     
     private static final ResourceLocation TEXTURE = 
-        new ResourceLocation(BonePipe.MODID, "textures/gui/adapter_new.png");
+        new ResourceLocation(BonePipe.MODID, "textures/gui/adapter_channels.png");
     
-    // Mekanism-style dimensions
+    // GUI dimensions - compact without player inventory
     private static final int GUI_WIDTH = 176;
-    private static final int GUI_HEIGHT = 166;
-    private static final int BASE_Y_OFFSET = 84; // Player inventory Y position
+    private static final int GUI_HEIGHT = 120; // Smaller without inventory
     
-    // Widget areas
-    private static final int CONTENT_X = 8;
-    private static final int CONTENT_Y = 18;
-    private static final int CONTENT_WIDTH = 160;
-    private static final int CONTENT_HEIGHT = 58; // Fits before player inventory (84-18-8)
+    // Channel configuration area
+    private static final int CHANNELS_START_X = 8;
+    private static final int CHANNELS_START_Y = 50;
+    private static final int CHANNEL_ROW_HEIGHT = 16;
     
-    // Side configuration
-    private static final int SIDE_BUTTON_SIZE = 18;
-    private static final int SIDE_BUTTONS_START_X = 8;
-    private static final int SIDE_BUTTONS_START_Y = 40;
+    // Main channels to display
+    private static final TransferChannel[] MAIN_CHANNELS = {
+        TransferChannel.ITEMS,
+        TransferChannel.FLUIDS,
+        TransferChannel.ENERGY,
+        TransferChannel.MEK_GAS
+    };
     
     // Widgets
     private EditBox frequencyField;
-    private Direction selectedSide = Direction.NORTH;
-    // Track focus state to detect when user finishes editing
     private boolean prevFreqFocused = false;
-    private Button saveFreqButton;
     
     public AdapterScreen(AdapterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
-        this.inventoryLabelY = this.imageHeight - 94; // Mekanism formula
         this.titleLabelY = 6;
+        // No inventory labels
+        this.inventoryLabelY = 10000; // Hide it off-screen
     }
     
     @Override
@@ -64,28 +64,22 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         int guiLeft = (this.width - this.imageWidth) / 2;
         int guiTop = (this.height - this.imageHeight) / 2;
         
-        // Frequency input field - matches black rectangle in texture
+        // Frequency input field
         frequencyField = new EditBox(
             this.font,
-            guiLeft + 31, guiTop + 23,
-            98, 14,
+            guiLeft + 60, guiTop + 22,
+            80, 14,
             Component.literal("Frequency")
         );
         frequencyField.setMaxLength(32);
         frequencyField.setValue(menu.getBlockEntity().getFrequency());
         frequencyField.setResponder(this::onFrequencyChanged);
-        frequencyField.setBordered(false); // No border - texture provides it
-        frequencyField.setTextColor(0xFFFFFF); // White text on black background
+        frequencyField.setBordered(false);
+        frequencyField.setTextColor(0xFFFFFF);
         this.addRenderableWidget(frequencyField);
         
-        // Set focus to frequency field
         this.setInitialFocus(frequencyField);
         this.prevFreqFocused = frequencyField.isFocused();
-
-        // Save button next to frequency field
-        saveFreqButton = this.addRenderableWidget(new Button(guiLeft + 131, guiTop + 23, 30, 14, Component.literal("Save"), (btn) -> {
-            sendFrequencyToServer();
-        }));
     }
     
     private void onFrequencyChanged(String newFrequency) {
@@ -150,51 +144,42 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     }
     
     /**
-     * Render tooltips for side configuration buttons
+     * Render tooltips for channel rows
      */
     private void renderButtonTooltips(PoseStack poseStack, int mouseX, int mouseY) {
         int guiLeft = (this.width - this.imageWidth) / 2;
         int guiTop = (this.height - this.imageHeight) / 2;
         
         // Tooltip for frequency field
-        if (mouseX >= guiLeft + 31 && mouseX < guiLeft + 129 &&
-            mouseY >= guiTop + 23 && mouseY < guiTop + 37) {
+        if (mouseX >= guiLeft + 60 && mouseX < guiLeft + 140 &&
+            mouseY >= guiTop + 22 && mouseY < guiTop + 36) {
             renderComponentTooltip(poseStack, java.util.List.of(
                 Component.literal("§fWireless Channel"),
                 Component.literal(""),
                 Component.literal("§7Enter same channel on two"),
                 Component.literal("§7adapters to link them."),
                 Component.literal(""),
-                Component.literal("§7Example: 'base' or '1'"),
-                Component.literal(""),
-                Component.literal("§8Channel: §e" + 
-                    (menu.getBlockEntity().getFrequency().isEmpty() ? "Not set" : menu.getBlockEntity().getFrequency()))
+                Component.literal("§7Example: 'base' or '1'")
             ), mouseX, mouseY);
             return;
         }
         
-        // Tooltips for side buttons
-        int startX = guiLeft + SIDE_BUTTONS_START_X;
-        int startY = guiTop + SIDE_BUTTONS_START_Y;
+        // Tooltips for channel rows
+        int startX = guiLeft + CHANNELS_START_X;
+        int startY = guiTop + CHANNELS_START_Y;
         
-        Direction[] directions = {
-            Direction.UP, Direction.DOWN, Direction.NORTH,
-            Direction.SOUTH, Direction.WEST, Direction.EAST
-        };
-        
-        for (int i = 0; i < directions.length; i++) {
-            int col = i % 3;
-            int row = i / 3;
-            int x = startX + col * 20;
-            int y = startY + row * 20;
+        for (int i = 0; i < MAIN_CHANNELS.length; i++) {
+            int y = startY + i * CHANNEL_ROW_HEIGHT;
             
-            if (mouseX >= x && mouseX < x + 18 && mouseY >= y && mouseY < y + 18) {
-                Direction dir = directions[i];
+            if (mouseX >= startX && mouseX < startX + 160 &&
+                mouseY >= y && mouseY < y + 14) {
+                
+                TransferChannel channel = MAIN_CHANNELS[i];
                 AdapterBlockEntity be = menu.getBlockEntity();
-                AdapterBlockEntity.SideConfig config = be.getSideConfig(dir);
+                AdapterBlockEntity.ChannelConfig config = be.getChannelConfig(channel);
                 
                 String modeName = config != null ? config.mode.name() : "DISABLED";
-                String modeColor = switch(config != null ? config.mode : AdapterBlockEntity.SideConfig.TransferMode.DISABLED) {
+                String modeColor = switch(config != null ? config.mode : AdapterBlockEntity.ChannelConfig.TransferMode.DISABLED) {
                     case OUTPUT -> "§6"; // Orange
                     case INPUT -> "§9"; // Blue
                     case BOTH -> "§e"; // Yellow
@@ -203,11 +188,10 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
                 
                 // Multi-line tooltip
                 renderComponentTooltip(poseStack, java.util.List.of(
-                    Component.literal("§fSide: §b" + dir.getName().toUpperCase()),
+                    Component.literal("§f" + channel.getDisplayName()),
                     Component.literal("§fMode: " + modeColor + modeName),
                     Component.literal(""),
-                    Component.literal("§7Left-click: Select"),
-                    Component.literal("§7Right-click: Cycle mode"),
+                    Component.literal("§7Click to cycle mode"),
                     Component.literal(""),
                     Component.literal("§8OUTPUT: Extract from machine"),
                     Component.literal("§8INPUT: Insert to machine"),
@@ -228,111 +212,136 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         int guiLeft = (this.width - this.imageWidth) / 2;
         int guiTop = (this.height - this.imageHeight) / 2;
         
-        // Main background - single blit like Mekanism
+        // Main background
         this.blit(poseStack, guiLeft, guiTop, 0, 0, this.imageWidth, this.imageHeight);
         
-        // Side configuration buttons background
-        renderSideConfigArea(poseStack, guiLeft, guiTop);
+        // Draw channel configuration buttons
+        renderChannelButtons(poseStack, guiLeft, guiTop);
     }
     
     /**
-     * Render side configuration area (6 direction buttons + mode selector)
+     * Render channel configuration buttons
      */
-    private void renderSideConfigArea(PoseStack poseStack, int guiLeft, int guiTop) {
-        // Buttons are baked into texture at positions matching our 3x2 grid
-        // Just draw selection highlight and mode indicators
-        
-        int startX = guiLeft + SIDE_BUTTONS_START_X;
-        int startY = guiTop + SIDE_BUTTONS_START_Y;
-        
+    private void renderChannelButtons(PoseStack poseStack, int guiLeft, int guiTop) {
         AdapterBlockEntity be = menu.getBlockEntity();
         
-        Direction[] directions = {
-            Direction.UP, Direction.DOWN, Direction.NORTH,
-            Direction.SOUTH, Direction.WEST, Direction.EAST
-        };
+        int x = guiLeft + CHANNELS_START_X;
+        int y = guiTop + CHANNELS_START_Y;
         
-        for (int i = 0; i < directions.length; i++) {
-            int col = i % 3;
-            int row = i / 3;
-            int x = startX + col * 20;
-            int y = startY + row * 20;
-            
-            Direction dir = directions[i];
-            
-            // Highlight selected button
-            if (selectedSide == dir) {
-                fill(poseStack, x-1, y-1, x+19, y+19, 0xFFFFFFFF);
+        for (TransferChannel channel : MAIN_CHANNELS) {
+            AdapterBlockEntity.ChannelConfig config = be.getChannelConfig(channel);
+            if (config != null && config.mode != AdapterBlockEntity.ChannelConfig.TransferMode.DISABLED) {
+                // Draw colored indicator bar based on mode
+                int color = getModeColor(config.mode);
+                fill(poseStack, x, y, x + 160, y + 14, color | 0x40000000); // Semi-transparent
+                fill(poseStack, x, y, x + 2, y + 14, color); // Solid left edge
             }
-            
-            // Show mode indicator as colored corner pixel
-            AdapterBlockEntity.SideConfig config = be.getSideConfig(dir);
-            if (config != null && config.enabled) {
-                int modeColor = getModeColor(config.mode);
-                fill(poseStack, x+15, y+15, x+18, y+18, modeColor);
-            }
+            y += CHANNEL_ROW_HEIGHT;
         }
     }
     
     /**
      * Get color for transfer mode
      */
-    private int getModeColor(AdapterBlockEntity.SideConfig.TransferMode mode) {
+    private int getModeColor(AdapterBlockEntity.ChannelConfig.TransferMode mode) {
         return switch (mode) {
             case OUTPUT -> 0xFFFF5500; // Orange - extracting
             case INPUT -> 0xFF0055FF;  // Blue - inserting
             case BOTH -> 0xFFFFFF00;   // Yellow - bidirectional
-            case DISABLED -> 0xFF808080; // Gray
+            case DISABLED -> 0xFF404040; // Dark gray
+        };
+    }
+    
+    /**
+     * Get text color for mode display
+     */
+    private int getModeTextColor(AdapterBlockEntity.ChannelConfig.TransferMode mode) {
+        return switch (mode) {
+            case OUTPUT -> 0xFF5500; // Orange
+            case INPUT -> 0x0055FF;  // Blue
+            case BOTH -> 0xFFFF00;   // Yellow
+            case DISABLED -> 0x808080; // Gray
+        };
+    }
+    
+    /**
+     * Get text representation of mode
+     */
+    private String getModeText(AdapterBlockEntity.ChannelConfig.TransferMode mode) {
+        return switch (mode) {
+            case OUTPUT -> "OUTPUT";
+            case INPUT -> "INPUT";
+            case BOTH -> "BOTH";
+            case DISABLED -> "DISABLED";
+        };
+    }
+    
+    /**
+     * Get icon for channel (simple ASCII)
+     */
+    private String getChannelIcon(TransferChannel channel) {
+        return switch (channel) {
+            case ITEMS -> "[I]";
+            case FLUIDS -> "[F]";
+            case ENERGY -> "[E]";
+            case MEK_GAS -> "[G]";
+            default -> "[?]";
+        };
+    }
+    
+    /**
+     * Get short name for channel
+     */
+    private String getShortChannelName(TransferChannel channel) {
+        return switch (channel) {
+            case ITEMS -> "Items";
+            case FLUIDS -> "Fluids";
+            case ENERGY -> "Energy";
+            case MEK_GAS -> "Gas";
+            default -> channel.getDisplayName();
         };
     }
     
     @Override
     protected void renderLabels(PoseStack poseStack, int mouseX, int mouseY) {
-        // Title
-        this.font.draw(poseStack, this.title, (float)this.titleLabelX, (float)this.titleLabelY, 0x404040);
+        // Title - centered in title bar (y:4-17)
+        this.font.draw(poseStack, this.title, 8, 7, 0x404040);
         
-        // Inventory label
-        this.font.draw(poseStack, this.playerInventoryTitle, 
-            (float)this.inventoryLabelX, (float)this.inventoryLabelY, 0x404040);
+        // ID label - in label panel (y:18-35)
+        this.font.draw(poseStack, "ID:", 10, 23, 0xFFFFFF);
         
-        // Frequency label - moved higher and to the right
-        this.font.draw(poseStack, "Channel:", 32, 12, 0x404040);
-        
-        // Current frequency display - below text field
-        String currentFreq = menu.getBlockEntity().getFrequency();
-        if (!currentFreq.isEmpty()) {
-            this.font.draw(poseStack, "§8Current: §e" + currentFreq, 32, 40, 0x606060);
-        } else {
-            this.font.draw(poseStack, "§8Not set", 32, 40, 0x606060);
-        }
-        
-        // Status info - top right
+        // Connected machine - in info panel (y:36-48)
         AdapterBlockEntity be = menu.getBlockEntity();
-        String status = be.isEnabled() ? "§aActive" : "§cInactive";
-        this.font.draw(poseStack, status, 135, 6, 0xFFFFFF);
-        
-        // Connected machine info - below status
-        if (be.isConnected()) {
-            String machineName = be.getConnectedMachineName();
-            this.font.draw(poseStack, "§a✓ " + machineName, 8, 94, 0x40FF40);
+        String machineName = be.getConnectedMachineName();
+        if (machineName != null && !machineName.equals("None")) {
+            // Truncate long names
+            if (machineName.length() > 20) {
+                machineName = machineName.substring(0, 17) + "...";
+            }
+            this.font.draw(poseStack, "§a" + machineName, 10, 39, 0x40FF40);
         } else {
-            this.font.draw(poseStack, "§c✗ No Machine", 8, 94, 0xFF4040);
+            this.font.draw(poseStack, "§7No Machine", 10, 39, 0x808080);
         }
         
-        // Side configuration label - above buttons
-        this.font.draw(poseStack, "§7Configure Sides:", 8, 30, 0x505050);
-        
-        // Show selected side info - below buttons
-        if (selectedSide != null) {
-            AdapterBlockEntity.SideConfig config = be.getSideConfig(selectedSide);
-            String modeName = config != null ? config.mode.name() : "DISABLED";
+        // Channel labels - rows start at y:50, height 16, so text at y+4 for centering
+        int y = CHANNELS_START_Y + 4;
+        for (TransferChannel channel : MAIN_CHANNELS) {
+            AdapterBlockEntity.ChannelConfig config = be.getChannelConfig(channel);
             
-            // Show selected side and mode below button grid
-            this.font.draw(poseStack, "Side: §f" + selectedSide.getName(), 8, 84, 0x303030);
-            this.font.draw(poseStack, "Mode: §e" + modeName, 80, 84, 0x303030);
-        } else {
-            // Show instructions when no side selected
-            this.font.draw(poseStack, "§8Click buttons to configure", 8, 84, 0x505050);
+            // Channel icon in icon box - shifted right by 2px
+            String icon = getChannelIcon(channel);
+            this.font.draw(poseStack, icon, CHANNELS_START_X + 6, y, 0xFFFFFF);
+            
+            // Channel name after icon box - shifted right by 2px
+            String channelName = getShortChannelName(channel);
+            this.font.draw(poseStack, channelName, CHANNELS_START_X + 23, y, 0x404040);
+            
+            // Mode in right box (x:WIDTH-74 to WIDTH-11)
+            String modeText = getModeText(config != null ? config.mode : AdapterBlockEntity.ChannelConfig.TransferMode.DISABLED);
+            int modeColor = getModeTextColor(config != null ? config.mode : AdapterBlockEntity.ChannelConfig.TransferMode.DISABLED);
+            this.font.draw(poseStack, modeText, GUI_WIDTH - 70, y, modeColor);
+            
+            y += CHANNEL_ROW_HEIGHT;
         }
     }
     
@@ -341,31 +350,20 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
         int guiLeft = (this.width - this.imageWidth) / 2;
         int guiTop = (this.height - this.imageHeight) / 2;
         
-        // Check side button clicks - 3x2 grid, 20px spacing
-        int startX = guiLeft + SIDE_BUTTONS_START_X;
-        int startY = guiTop + SIDE_BUTTONS_START_Y;
+        // Check channel row clicks
+        int startX = guiLeft + CHANNELS_START_X;
+        int startY = guiTop + CHANNELS_START_Y;
         
-        Direction[] directions = {
-            Direction.UP, Direction.DOWN, Direction.NORTH,
-            Direction.SOUTH, Direction.WEST, Direction.EAST
-        };
-        
-        for (int i = 0; i < directions.length; i++) {
-            int col = i % 3;
-            int row = i / 3;
-            int x = startX + col * 20;
-            int y = startY + row * 20;
+        for (int i = 0; i < MAIN_CHANNELS.length; i++) {
+            int y = startY + i * CHANNEL_ROW_HEIGHT;
             
-            if (mouseX >= x && mouseX < x + 18 &&
-                mouseY >= y && mouseY < y + 18) {
+            if (mouseX >= startX && mouseX < startX + 160 &&
+                mouseY >= y && mouseY < y + 14) {
                 
-                Direction clickedDir = directions[i];
+                TransferChannel clickedChannel = MAIN_CHANNELS[i];
                 
-                if (button == 0) { // Left click - select side
-                    selectedSide = clickedDir;
-                    return true;
-                } else if (button == 1) { // Right click - cycle mode
-                    cycleSideMode(clickedDir);
+                if (button == 0 || button == 1) { // Left or right click - cycle mode
+                    cycleChannelMode(clickedChannel);
                     return true;
                 }
             }
@@ -375,30 +373,27 @@ public class AdapterScreen extends AbstractContainerScreen<AdapterMenu> {
     }
     
     /**
-     * Cycle through transfer modes for a side
+     * Cycle through transfer modes for a channel
      */
-    private void cycleSideMode(Direction direction) {
+    private void cycleChannelMode(TransferChannel channel) {
         AdapterBlockEntity be = menu.getBlockEntity();
-        AdapterBlockEntity.SideConfig config = be.getSideConfig(direction);
+        AdapterBlockEntity.ChannelConfig config = be.getChannelConfig(channel);
         
         if (config == null) {
-            config = new AdapterBlockEntity.SideConfig();
+            config = new AdapterBlockEntity.ChannelConfig();
         }
         
         // Cycle: DISABLED -> OUTPUT -> INPUT -> BOTH -> DISABLED
         config.mode = switch (config.mode) {
-            case DISABLED -> AdapterBlockEntity.SideConfig.TransferMode.OUTPUT;
-            case OUTPUT -> AdapterBlockEntity.SideConfig.TransferMode.INPUT;
-            case INPUT -> AdapterBlockEntity.SideConfig.TransferMode.BOTH;
-            case BOTH -> AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
+            case DISABLED -> AdapterBlockEntity.ChannelConfig.TransferMode.OUTPUT;
+            case OUTPUT -> AdapterBlockEntity.ChannelConfig.TransferMode.INPUT;
+            case INPUT -> AdapterBlockEntity.ChannelConfig.TransferMode.BOTH;
+            case BOTH -> AdapterBlockEntity.ChannelConfig.TransferMode.DISABLED;
         };
-        config.enabled = config.mode != AdapterBlockEntity.SideConfig.TransferMode.DISABLED;
         
         // Send to server
         NetworkHandler.CHANNEL.sendToServer(
-            new com.bonepipe.network.packets.UpdateSideConfigPacket(
-                be.getBlockPos(), direction, config.enabled, config.mode
-            )
+            new UpdateChannelConfigPacket(be.getBlockPos(), channel, config.mode)
         );
     }
     

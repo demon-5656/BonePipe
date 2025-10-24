@@ -75,6 +75,13 @@ public class NetworkManager {
         }
         
         NetworkManager manager = getInstance();
+        
+        // Debug: log tick every 100 ticks
+        if (manager.totalTicks % 100 == 0) {
+            BonePipe.LOGGER.info("⏰ NetworkManager tick #{}, {} networks active", 
+                manager.totalTicks, manager.networks.size());
+        }
+        
         long startTime = System.nanoTime();
         
         // Tick all networks

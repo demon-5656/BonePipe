@@ -26,6 +26,10 @@ public class WirelessNetwork {
     private int cacheAge = 0;
     private static final int CACHE_LIFETIME = 20; // 1 second
     
+    // Transfer rate limiter
+    private int tickCounter = 0;
+    private static final int TRANSFER_INTERVAL = 20; // Transfer every 20 ticks (1 per second)
+    
     public WirelessNetwork(FrequencyKey key) {
         this.key = Objects.requireNonNull(key);
         BonePipe.LOGGER.debug("Created new network: {}", key);
@@ -77,6 +81,13 @@ public class WirelessNetwork {
         if (nodes.isEmpty()) {
             return;
         }
+        
+        // Rate limit transfers
+        tickCounter++;
+        if (tickCounter < TRANSFER_INTERVAL) {
+            return;
+        }
+        tickCounter = 0;
         
         // Reset tick counters
         lastTickTransfers = 0;

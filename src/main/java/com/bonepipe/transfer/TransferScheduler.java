@@ -121,6 +121,9 @@ public class TransferScheduler {
             return 0;
         }
         
+        BonePipe.LOGGER.debug("📊 Processing channel {} with {} nodes", 
+            handler.getChannel(), validNodes.size());
+        
         // 1. Separate INPUT and OUTPUT nodes
         var inputNodes = new java.util.ArrayList<com.bonepipe.network.NetworkNode>();
         var outputNodes = new java.util.ArrayList<com.bonepipe.network.NetworkNode>();
@@ -128,22 +131,25 @@ public class TransferScheduler {
         for (var node : validNodes) {
             var adapter = node.getAdapter();
             if (adapter == null || !adapter.isEnabled()) {
+                BonePipe.LOGGER.debug("  Node {} skipped: adapter={}, enabled={}", 
+                    node.getPosition(), adapter != null, adapter != null && adapter.isEnabled());
                 continue;
             }
             
-            // Check side configuration for this channel
-            var machineDir = adapter.getMachineDirection();
-            if (machineDir == null) {
+            // Check channel configuration for this transfer type
+            var channelConfig = adapter.getChannelConfig(handler.getChannel());
+            if (channelConfig == null || !channelConfig.isEnabled()) {
+                BonePipe.LOGGER.debug("  Node {} skipped: channel {} config={}, enabled={}", 
+                    node.getPosition(), handler.getChannel().getDisplayName(), 
+                    channelConfig != null, channelConfig != null && channelConfig.isEnabled());
                 continue;
             }
             
-            var sideConfig = adapter.getSideConfig(machineDir);
-            if (sideConfig == null || !sideConfig.enabled) {
-                continue;
-            }
+            BonePipe.LOGGER.debug("  Node {} for channel {}: mode={}", 
+                node.getPosition(), handler.getChannel().getDisplayName(), channelConfig.mode);
             
             // Add to appropriate list based on transfer mode
-            switch (sideConfig.mode) {
+            switch (channelConfig.mode) {
                 case INPUT -> inputNodes.add(node);
                 case OUTPUT -> outputNodes.add(node);
                 case BOTH -> {
@@ -153,11 +159,11 @@ public class TransferScheduler {
             }
         }
         
+        BonePipe.LOGGER.debug("  Result: {} inputs, {} outputs", inputNodes.size(), outputNodes.size());
+        
         if (inputNodes.isEmpty() || outputNodes.isEmpty()) {
             return 0;
-        }
-        
-        // 2. Round-robin pairing with limits
+        }        // 2. Round-robin pairing with limits
         int pairsProcessed = 0;
         int outputIndex = 0;
         
@@ -183,15 +189,7 @@ public class TransferScheduler {
                     continue;
                 }
                 
-                // 4. Apply filters (if filter upgrade is installed)
-                if (inputAdapter.hasFilterUpgrade() || outputAdapter.hasFilterUpgrade()) {
-                    // Get side configs to check filters
-                    var inputSide = inputAdapter.getSideConfig(inputAdapter.getMachineDirection());
-                    var outputSide = outputAdapter.getSideConfig(outputAdapter.getMachineDirection());
-                    
-                    // For now, filters are checked in the handler's transfer logic
-                    // This is where we could add additional filter validation
-                }
+                // Filters are checked in the handler's transfer logic
                 
                 // 5. Execute transfer with upgrade bonuses
                 try {
@@ -221,7 +219,7 @@ public class TransferScheduler {
                         inputAdapter.recordTransfer(transferred);
                         outputAdapter.recordTransfer(transferred);
                         
-                        BonePipe.LOGGER.trace("Transferred {} units via {} from {} to {}", 
+                        BonePipe.LOGGER.debug("Transferred {} units via {} from {} to {}", 
                             transferred, handler.getChannel(), 
                             inputNode.getPosition().toShortString(),
                             outputNode.getPosition().toShortString());
@@ -237,7 +235,7 @@ public class TransferScheduler {
         }
         
         if (totalTransferred > 0) {
-            BonePipe.LOGGER.debug("Channel {} completed {} transfers ({} units total)", 
+            BonePipe.LOGGER.info("Channel {} completed {} transfers ({} units total)", 
                 handler.getChannel(), pairsProcessed, totalTransferred);
         }
         

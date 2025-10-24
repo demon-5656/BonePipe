@@ -1,11 +1,9 @@
 package com.bonepipe.transfer;
 
-import com.bonepipe.BonePipe;
 import com.bonepipe.blocks.AdapterBlockEntity;
 import com.bonepipe.network.NetworkNode;
 import com.bonepipe.util.MachineDetector;
 import mekanism.api.Action;
-import mekanism.api.chemical.gas.Gas;
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
 import mekanism.common.capabilities.Capabilities;
@@ -14,7 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
  * Transfer handler for Mekanism Gas using Gas Capability
- * Supports all gases: Hydrogen, Oxygen, Chlorine, etc.
+ * Simplified to match EnergyTransferHandler pattern
  */
 public class GasTransferHandler implements ITransferHandler {
     
@@ -40,50 +38,40 @@ public class GasTransferHandler implements ITransferHandler {
             return TransferResult.empty();
         }
         
-        // Get gas handlers
-        IGasHandler srcHandler = getGasHandler(srcMachine, getSideToMachine(srcAdapter));
-        IGasHandler dstHandler = getGasHandler(dstMachine, getSideToMachine(dstAdapter));
+        // Get gas handlers (same pattern as energy/fluids)
+        Direction srcSide = getSideToMachine(srcAdapter);
+        Direction dstSide = getSideToMachine(dstAdapter);
+        IGasHandler srcHandler = getGasHandler(srcMachine, srcSide);
+        IGasHandler dstHandler = getGasHandler(dstMachine, dstSide);
         
         if (srcHandler == null || dstHandler == null) {
             return TransferResult.empty();
         }
         
-        // Perform transfer
-        long transferred = 0;
-        long remaining = maxAmount;
-        
-        // Try to extract and insert gas from each tank
-        for (int srcTank = 0; srcTank < srcHandler.getTanks() && remaining > 0; srcTank++) {
-            // Simulate extract
-            GasStack extracted = srcHandler.extractChemical(remaining, Action.SIMULATE);
-            if (extracted.isEmpty()) {
-                continue;
-            }
-            
-            // Simulate insert
-            GasStack remainder = dstHandler.insertChemical(extracted, Action.SIMULATE);
-            long canTransfer = extracted.getAmount() - remainder.getAmount();
-            
-            if (canTransfer > 0) {
-                // Real extract
-                GasStack realExtracted = srcHandler.extractChemical(canTransfer, Action.EXECUTE);
-                
-                if (!realExtracted.isEmpty()) {
-                    // Real insert
-                    GasStack realRemainder = dstHandler.insertChemical(realExtracted, Action.EXECUTE);
-                    
-                    long actualTransferred = realExtracted.getAmount() - realRemainder.getAmount();
-                    transferred += actualTransferred;
-                    remaining -= actualTransferred;
-                    
-                    if (actualTransferred != canTransfer) {
-                        BonePipe.LOGGER.warn("Gas transfer mismatch: expected {} but transferred {}", 
-                            canTransfer, actualTransferred);
-                    }
-                }
-            }
+        // Simulate extract from source
+        GasStack extractable = srcHandler.extractChemical(maxAmount, Action.SIMULATE);
+        if (extractable.isEmpty()) {
+            return TransferResult.empty();
         }
         
+        // Simulate insert to destination
+        GasStack remainder = dstHandler.insertChemical(extractable, Action.SIMULATE);
+        long canTransfer = extractable.getAmount() - remainder.getAmount();
+        if (canTransfer == 0) {
+            return TransferResult.empty();
+        }
+        
+        // Real extract
+        GasStack extracted = srcHandler.extractChemical(canTransfer, Action.EXECUTE);
+        if (extracted.isEmpty()) {
+            return TransferResult.empty();
+        }
+        
+        // Real insert
+        GasStack realRemainder = dstHandler.insertChemical(extracted, Action.EXECUTE);
+        long transferred = extracted.getAmount() - realRemainder.getAmount();
+        
+        // Return result
         return transferred > 0 ? 
             TransferResult.success(transferred) : 
             TransferResult.empty();
@@ -100,15 +88,9 @@ public class GasTransferHandler implements ITransferHandler {
         IGasHandler handler = getGasHandler(machine, getSideToMachine(adapter));
         if (handler == null) return false;
         
-        // Check if any tank has extractable gas
-        for (int i = 0; i < handler.getTanks(); i++) {
-            GasStack gas = handler.getChemicalInTank(i);
-            if (!gas.isEmpty()) {
-                return true;
-            }
-        }
-        
-        return false;
+        // Try to simulate extract - if we can extract anything, we can extract
+        GasStack extractable = handler.extractChemical(Long.MAX_VALUE, Action.SIMULATE);
+        return !extractable.isEmpty();
     }
     
     @Override
@@ -134,13 +116,9 @@ public class GasTransferHandler implements ITransferHandler {
         IGasHandler handler = getGasHandler(machine, getSideToMachine(adapter));
         if (handler == null) return 0;
         
-        long total = 0;
-        for (int i = 0; i < handler.getTanks(); i++) {
-            GasStack gas = handler.getChemicalInTank(i);
-            total += gas.getAmount();
-        }
-        
-        return total;
+        // Simulate extract to get actual extractable amount
+        GasStack extractable = handler.extractChemical(Long.MAX_VALUE, Action.SIMULATE);
+        return extractable.isEmpty() ? 0 : extractable.getAmount();
     }
     
     @Override
@@ -154,6 +132,7 @@ public class GasTransferHandler implements ITransferHandler {
         IGasHandler handler = getGasHandler(machine, getSideToMachine(adapter));
         if (handler == null) return 0;
         
+        // Sum up capacity across all tanks
         long capacity = 0;
         for (int i = 0; i < handler.getTanks(); i++) {
             GasStack gas = handler.getChemicalInTank(i);
@@ -185,10 +164,10 @@ public class GasTransferHandler implements ITransferHandler {
         if (entity == null) return null;
         
         try {
-            return entity.getCapability(Capabilities.GAS_HANDLER, side).orElse(null);
+            return entity.getCapability(Capabilities.GAS_HANDLER, side)
+                .orElse(null);
         } catch (Exception e) {
-            BonePipe.LOGGER.error("Error getting gas handler from {}: {}", 
-                entity.getBlockPos(), e.getMessage());
+            // Silently return null if capability not found
             return null;
         }
     }
