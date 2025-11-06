@@ -186,8 +186,12 @@ public class ItemTransferHandler implements ITransferHandler {
      * Get side to access machine
      */
     private Direction getSideToMachine(AdapterBlockEntity adapter) {
-        return MachineDetector.findMachineDirection(adapter.getLevel(), adapter.getBlockPos());
-    }    /**
+        Direction direction = MachineDetector.findMachineDirection(
+            adapter.getLevel(), adapter.getBlockPos());
+        return direction == null ? null : MachineDetector.getMachineSide(direction);
+    }
+    
+    /**
      * Get item handler capability from a BlockEntity
      */
     private IItemHandler getItemHandler(BlockEntity be, Direction side) {

@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 
-VERSION = "3.0.12"
+VERSION = "0.13"
 JAR_NAME = f"bonepipe-{VERSION}.jar"
 RELEASE_JAR = f"bonepipe-{VERSION}-release.jar"
 

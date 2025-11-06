@@ -3,7 +3,7 @@
 # BonePipe v3.0.0 Release Script
 # Usage: ./create_release.fish
 
-set VERSION "3.0.12"
+set VERSION "0.13"
 set JAR_NAME "bonepipe-$VERSION.jar"
 set RELEASE_JAR "bonepipe-$VERSION-release.jar"
 

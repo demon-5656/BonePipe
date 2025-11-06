@@ -1,5 +1,6 @@
 package com.bonepipe.util;
 
+import mekanism.common.capabilities.Capabilities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -9,7 +10,23 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 /**
  * Utility class for detecting machine connections
  */
-public class MachineDetector {
+public final class MachineDetector {
+    
+    private static final boolean MEKANISM_LOADED;
+    
+    static {
+        boolean loaded;
+        try {
+            Class.forName("mekanism.api.chemical.gas.IGasHandler");
+            Class.forName("mekanism.common.capabilities.Capabilities");
+            loaded = true;
+        } catch (ClassNotFoundException e) {
+            loaded = false;
+        }
+        MEKANISM_LOADED = loaded;
+    }
+    
+    private MachineDetector() {}
     
     /**
      * Find connected machine in the direction the adapter is facing
@@ -68,13 +85,24 @@ public class MachineDetector {
         boolean hasItem = be.getCapability(ForgeCapabilities.ITEM_HANDLER, side).isPresent();
         boolean hasFluid = be.getCapability(ForgeCapabilities.FLUID_HANDLER, side).isPresent();
         boolean hasEnergy = be.getCapability(ForgeCapabilities.ENERGY, side).isPresent();
+        boolean hasGas = false;
         
-        // Also check without side specification (some machines use null side)
         if (!hasItem) hasItem = be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).isPresent();
         if (!hasFluid) hasFluid = be.getCapability(ForgeCapabilities.FLUID_HANDLER, null).isPresent();
         if (!hasEnergy) hasEnergy = be.getCapability(ForgeCapabilities.ENERGY, null).isPresent();
         
-        return hasItem || hasFluid || hasEnergy;
+        if (MEKANISM_LOADED) {
+            try {
+                hasGas = be.getCapability(Capabilities.GAS_HANDLER, side).isPresent();
+                if (!hasGas) {
+                    hasGas = be.getCapability(Capabilities.GAS_HANDLER, null).isPresent();
+                }
+            } catch (NoClassDefFoundError ignored) {
+                // Mekanism not actually present at runtime
+            }
+        }
+        
+        return hasItem || hasFluid || hasEnergy || hasGas;
     }
     
     /**
