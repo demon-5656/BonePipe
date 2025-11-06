@@ -8,11 +8,7 @@ public enum TransferChannel {
     ITEMS("items", "Item Transfer"),
     FLUIDS("fluids", "Fluid Transfer"),
     ENERGY("energy", "Energy Transfer"),
-    MEK_GAS("mek_gas", "Gas Transfer"),
-    MEK_INFUSE("mek_infuse", "Infusion Transfer"),
-    MEK_PIGMENT("mek_pigment", "Pigment Transfer"),
-    MEK_SLURRY("mek_slurry", "Slurry Transfer"),
-    REDSTONE("redstone", "Redstone Control");
+    MEK_GAS("mek_gas", "Gas Transfer");
     
     private final String id;
     private final String displayName;
@@ -34,8 +30,7 @@ public enum TransferChannel {
      * Check if this channel requires Mekanism
      */
     public boolean requiresMekanism() {
-        return this == MEK_GAS || this == MEK_INFUSE || 
-               this == MEK_PIGMENT || this == MEK_SLURRY;
+        return this == MEK_GAS;
     }
     
     /**

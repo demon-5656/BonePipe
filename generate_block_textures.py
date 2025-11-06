@@ -133,11 +133,6 @@ def main():
         path = os.path.join(output_dir, filename)
         img.save(path)
         print(f"✓ Created {path}")
-        
-        # Also save 4x preview
-        preview = img.resize((64, 64), Image.NEAREST)
-        preview_path = path.replace(".png", "_preview.png")
-        preview.save(preview_path)
     
     print(f"\n✓ Generated {len(textures)} textures")
     print("Note: Use adapter_front_active.png for blockstate variants")

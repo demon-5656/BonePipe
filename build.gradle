@@ -56,37 +56,11 @@ minecraft {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-repositories {
-    maven {
-        name = "Jared's maven"
-        url = "https://maven.blamejared.com/"
-    }
-    maven {
-        name = "ModMaven"
-        url = "https://modmaven.dev/"
-    }
-    maven {
-        name = "CurseForge"
-        url = "https://cursemaven.com"
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-}
-
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    
-    // JEI (compileOnly + runtimeOnly)
-    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
-    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
-    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
-    
+
     // Mekanism - local JAR for Gas support compilation
     compileOnly fg.deobf(files('libs/Mekanism-1.19.2-10.3.9.13.jar'))
-    
-    // The One Probe - local JAR
-    compileOnly fg.deobf(files('/home/pc243/.local/share/PrismLauncher/instances/1.19.2/minecraft/mods/theoneprobe-1.19-6.2.2.jar'))
 }
 
 tasks.named('processResources', ProcessResources).configure {

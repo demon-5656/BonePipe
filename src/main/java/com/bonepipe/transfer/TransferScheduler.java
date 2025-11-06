@@ -191,7 +191,7 @@ public class TransferScheduler {
                 
                 // Filters are checked in the handler's transfer logic
                 
-                // 5. Execute transfer with upgrade bonuses
+                // Execute transfer using per-channel base rates
                 try {
                     // Calculate transfer amount with speed bonus (use config values)
                     long baseAmount = 64; // Default for items
